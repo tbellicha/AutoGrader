@@ -1,16 +1,19 @@
-function App() {
+import "bootstrap/dist/css/bootstrap.min.css";
+import "./App.css";
 
+import FilesUpload from "./components/FilesUpload";
+
+const App: React.FC = () => {
   return (
-    <>
-     <div className="upload-container">
-      This is where the multi-part form for uploading zips and files will go.
-      This is currently a placeholder for our project skeleton.
-      </div> 
-      <p>
-        This is a placeholder paragraph...
-      </p>
-    </>
-  )
+    <div className="container" style={{ width: "600px" }}>
+      <div className="my-3">
+        <h3>bezkoder.com</h3>
+        <h4>React Typescript Multiple Files Upload</h4>
+      </div>
+
+      <FilesUpload />
+    </div>
+  );
 }
 
-export default App
+export default App;
