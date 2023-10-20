@@ -1,0 +1,7 @@
+FROM python:latest
+
+WORKDIR /src
+
+COPY /run . 
+
+CMD ["python", "run_test.py"]

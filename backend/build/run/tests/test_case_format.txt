@@ -1,0 +1,16 @@
+
+
+import unittest
+from code.hello_world import homework_1
+
+class TestHelloWorld(unittest.TestCase):
+    def setUp(self):
+        print(homework_1.ANSWER)
+        self.homework_1 = homework_1()
+
+    def test_equal(self):
+        self.assertEqual(self.homework_1.ANSWER, "Hello World")
+
+    def test_equal2(self):
+        self.assertEqual(self.homework_1.ANSWER, "Hello world")
+
