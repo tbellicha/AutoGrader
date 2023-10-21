@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import UploadService from "../services/FileUploadService";
 import IFile from "../types/File";
+import ServerResponse from "./ServerResponse";
 
 interface ProgressInfo {
   fileName: string;
@@ -12,6 +13,7 @@ const FilesUpload: React.FC = () => {
   const [progressInfos, setProgressInfos] = useState<Array<ProgressInfo>>([]);
   const [message, setMessage] = useState<Array<string>>([]);
   const [fileInfos, setFileInfos] = useState<Array<IFile>>([]);
+  const [serverResponse, setServerResponse] = useState<any>(null);
   const progressInfosRef = useRef<any>(null);
 
   useEffect(() => {
@@ -34,11 +36,15 @@ const FilesUpload: React.FC = () => {
       );
       setProgressInfos(_progressInfos);
     })
-      .then(() => {
+      .then((response) => {
         setMessage((prevMessage) => [
           ...prevMessage,
           file.name + ": Successful!"
         ]);
+
+        setServerResponse(response);
+        console.log(`Response: ${response}`);
+        //console.log(`Server Reponse: ${serverResponse}`);
       })
       .catch((err: any) => {
         _progressInfos[idx].percentage = 0;
@@ -139,6 +145,12 @@ const FilesUpload: React.FC = () => {
               </li>
             ))}
         </ul>
+      </div>
+
+      <div>
+        {serverResponse && (
+          <ServerResponse response={serverResponse} />
+        )}
       </div>
     </div>
   );

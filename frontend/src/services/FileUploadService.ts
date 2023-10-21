@@ -10,7 +10,8 @@ const upload = (file: File, onUploadProgress: (progressEvent: any) => void): Pro
       "Content-Type": "multipart/form-data",
     },
     onUploadProgress,
-  });
+  })
+  .then(response => response.data);
 };
 
 const getFiles = () : Promise<any> => {
