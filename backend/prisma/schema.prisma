@@ -1,0 +1,86 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native"]
+}
+
+generator docs {
+  provider = "node node_modules/prisma-docs-generator"
+  output   = "../docs/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Assignments {
+  Assignment_ID Int           @id @default(autoincrement())
+  Course_ID     Int
+  Title         String
+  Description   String
+  Due_Date      DateTime
+  Courses       Courses       @relation(fields: [Course_ID], references: [Course_ID])
+  Submissions   Submissions[]
+}
+
+model Courses {
+  Course_ID   Int           @id @default(autoincrement())
+  Course_Code String
+  Course_Name String
+  Teacher_ID  Int
+  Teachers    Teachers      @relation(fields: [Teacher_ID], references: [Teacher_ID])
+  Assignments Assignments[]
+  Enrollments Enrollments[]
+}
+
+model Enrollments {
+  Enrollment_ID Int      @id @default(autoincrement())
+  Student_ID    Int
+  Course_ID     Int
+  Students      Students @relation(fields: [Student_ID], references: [Student_ID])
+  Courses       Courses  @relation(fields: [Course_ID], references: [Course_ID])
+}
+
+model Students {
+  Student_ID  Int           @id @default(autoincrement())
+  First_Name  String
+  Last_Name   String
+  Email       String        @unique
+  Enrollments Enrollments[]
+  Submissions Submissions[]
+  Users       Users[]
+}
+
+model Submissions {
+  Submission_ID   Int         @id @default(autoincrement())
+  Assignment_ID   Int
+  Student_ID      Int
+  Submission_Date DateTime
+  Score           Int
+  Comments        String
+  Assignments     Assignments @relation(fields: [Assignment_ID], references: [Assignment_ID])
+  Students        Students    @relation(fields: [Student_ID], references: [Student_ID])
+}
+
+model Teachers {
+  Teacher_ID Int       @id @default(autoincrement())
+  First_Name String
+  Last_Name  String
+  Email      String    @unique
+  Courses    Courses[]
+  Users      Users[]
+}
+
+model Users {
+  User_ID    Int       @id @default(autoincrement())
+  Student_ID Int?
+  Teacher_ID Int?
+  Role       String
+  Username   String
+  Password   String
+  Students   Students? @relation(fields: [Student_ID], references: [Student_ID])
+  Teachers   Teachers? @relation(fields: [Teacher_ID], references: [Teacher_ID])
+}
