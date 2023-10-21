@@ -1,0 +1,35 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  WEB-BUILD:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Docker Compose
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install docker-compose
+      - name: Start Docker Compose
+        working-directory: ./
+        run: docker-compose up -d
+      - name: Verify Docker Compose
+        working-directory: ./
+        run: docker-compose ps
+      - name: Stop Docker Compose
+        working-directory: ./
+        run: docker-compose down2
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      - name: Install dependencies
+        run: npm install
+        working-directory: ./backend
