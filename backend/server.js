@@ -7,9 +7,9 @@ const multer = require('multer');
 const path = require('path');
 const cors = require('cors')
 const { exec } = require('child_process')
+const os = require('os')
 const database = require('./database_init')
 require('dotenv').config({ path: '../local.env' })
-
 
 const app = express();
 
@@ -40,12 +40,21 @@ app.post("/api/upload/file", upload.single('file'), (req, res) => {
     const scriptPath = path.join(__dirname, "/run.py");
     const result = req.file.filename.match("(?<lang>py|js|cpp|java)")
 
+    const configOS = {
+        linux: { python: '/usr/bin/python3'},
+        win32: { python: 'python'}
+    }
+
+    const platform = os.platform()
+    const pythonPath = configOS[platform].python
+
     try {
         if(req.file){
-            exec(`python ${scriptPath} "${result.groups["lang"]}"`, (error, stdout, stderr) => {
-                console.log("Starting execution")
-                if(error){
+            exec(`${pythonPath} ${scriptPath} "${result.groups["lang"]}"`, (error, stdout, stderr) => { 
+                console.log("Starting execution....")
+                if(error) {
                     res.status(500).send("Script execution failed")
+                    console.error("Error occured: ", stderr)
                 } else {
                     console.log(`Output: ${stdout}`)
                     res.json({output: stdout})
