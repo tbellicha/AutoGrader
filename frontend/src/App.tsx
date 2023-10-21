@@ -7,7 +7,7 @@ const App: React.FC = () => {
   return (
     <div className="container" style={{ width: "600px" }}>
       <div className="my-3">
-        <h3>bezkoder.com</h3>
+        <h3>AutoGrader</h3>
         <h4>React Typescript Multiple Files Upload</h4>
       </div>
 
