@@ -22,71 +22,72 @@ enum UserRole {
   STUDENT
 }
 
-model Assignments {
-  Assignment_ID Int           @id @default(autoincrement())
-  Course_ID     Int
-  Title         String
-  Description   String
-  Due_Date      DateTime
-  Courses       Courses       @relation(fields: [Course_ID], references: [Course_ID])
-  Submissions   Submissions[]
+model Assignment {
+  assignment_id String        @id @unique @default(cuid())
+  course_id     String
+  title         String
+  description   String
+  due_date      DateTime
+  Courses       Course        @relation(fields: [course_id], references: [course_id])
+  Submissions   Submission[]
 }
 
-model Courses {
-  Course_ID   Int           @id @default(autoincrement())
-  Course_Code String
-  Course_Name String
-  Teacher_ID  Int
-  Teachers    Teachers      @relation(fields: [Teacher_ID], references: [Teacher_ID])
-  Assignments Assignments[]
-  Enrollments Enrollments[]
+model Course {
+  course_id   String        @id @unique @default(cuid())
+  course_code String
+  course_name String
+  teacher_id  String
+  Teacher     Teacher       @relation(fields: [teacher_id], references: [teacher_id])
+  Assignments Assignment[]
+  Enrollments Enrollment[]
 }
 
-model Enrollments {
-  Enrollment_ID Int      @id @default(autoincrement())
-  Student_ID    Int
-  Course_ID     Int
-  Students      Students @relation(fields: [Student_ID], references: [Student_ID])
-  Courses       Courses  @relation(fields: [Course_ID], references: [Course_ID])
+model Enrollment {
+  enrollment_id String  @id @unique @default(cuid())
+  student_id    String
+  course_id     String
+  Student       Student @relation(fields: [student_id], references: [student_id])
+  Course        Course  @relation(fields: [course_id], references: [course_id])
 }
 
-model Students {
-  Student_ID  Int           @id @default(autoincrement())
-  First_Name  String
-  Last_Name   String
-  Email       String        @unique
-  Enrollments Enrollments[]
-  Submissions Submissions[]
-  Users       Users[]
+model Student {
+  student_id  String        @id @unique @default(cuid())
+  first_name  String
+  last_name   String
+  email       String        @unique
+  Enrollments Enrollment[]
+  Submissions Submission[]
+  Users       User[]
 }
 
-model Submissions {
-  Submission_ID   Int         @id @default(autoincrement())
-  Assignment_ID   Int
-  Student_ID      Int
-  Submission_Date DateTime
-  Score           Int
-  Comments        String
-  Assignments     Assignments @relation(fields: [Assignment_ID], references: [Assignment_ID])
-  Students        Students    @relation(fields: [Student_ID], references: [Student_ID])
+model Submission {
+  submission_id   String      @id @unique @default(cuid())
+  assignment_id   String
+  student_id      String
+  submission_date DateTime
+  score           Int
+  comment         String
+  Assignment      Assignment  @relation(fields: [assignment_id], references: [assignment_id])
+  Student         Student     @relation(fields: [student_id], references: [student_id])
 }
 
-model Teachers {
-  Teacher_ID Int       @id @default(autoincrement())
-  First_Name String
-  Last_Name  String
-  Email      String    @unique
-  Courses    Courses[]
-  Users      Users[]
+model Teacher {
+  teacher_id String    @id @unique @default(cuid())
+  first_name String
+  last_name  String
+  email      String    @unique
+  Courses    Course[]
+  Users      User[]
 }
 
-model Users {
-  User_ID    Int       @id @default(autoincrement())
-  Student_ID Int?
-  Teacher_ID Int?
-  Role       UserRole
-  Username   String
-  Password   String
-  Students   Students? @relation(fields: [Student_ID], references: [Student_ID])
-  Teachers   Teachers? @relation(fields: [Teacher_ID], references: [Teacher_ID])
+model User {
+  id         String    @id @unique @default(cuid())
+  student_id String?
+  teacher_id String?
+  role       UserRole  @default(STUDENT)
+  email      String
+  username   String    @default("Default username")
+  password   String
+  Student    Student?  @relation(fields: [student_id], references: [student_id])
+  Teacher    Teacher?  @relation(fields: [teacher_id], references: [teacher_id])
 }
