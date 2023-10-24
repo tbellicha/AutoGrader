@@ -16,6 +16,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  ADMIN
+  INSTRUCTOR
+  STUDENT
+}
+
 model Assignments {
   Assignment_ID Int           @id @default(autoincrement())
   Course_ID     Int
@@ -78,7 +84,7 @@ model Users {
   User_ID    Int       @id @default(autoincrement())
   Student_ID Int?
   Teacher_ID Int?
-  Role       String
+  Role       UserRole
   Username   String
   Password   String
   Students   Students? @relation(fields: [Student_ID], references: [Student_ID])
