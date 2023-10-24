@@ -89,7 +89,8 @@ app.post("/api/upload/file", upload.single('file'), (req, res) => {
 
 /**
  * @api {post} /api/signup Signup
- * req.body: { email: string, password: string }
+ * req.body.email: string
+ * req.body.password: string
  */
 app.post('/api/signup', (req, res, next) => {
     passport.authenticate('signup', { session: false },  async (err, user, info) => {
@@ -112,6 +113,24 @@ app.post('/api/signup', (req, res, next) => {
             console.error(error.message)
             return res.status(401).send('An error occurred.')
         }
+    })(req, res, next)
+})
+
+/**
+ * @api {post} /api/login Login
+ * req.body.email: string
+ * req.body.password: string
+ */
+app.post('/api/login', (req, res, next) => {
+    passport.authenticate('login', { session: false }, (err, user, info) => {
+        if (err) throw new Error(err)
+        if (user == false) return res.json(info)
+        const token = utils.generateToken(user.id)
+        return res.status(201).json({
+            status: 'success',
+            data: { message: 'Welcome back.', user, token },
+            statusCode: res.statusCode
+        })
     })(req, res, next)
 })
 
