@@ -9,6 +9,7 @@ const cors = require('cors')
 const { exec } = require('child_process')
 const os = require('os')
 const database = require('./database_init')
+const upload = multer({ storage: storage })
 require('dotenv').config({ path: '../local.env' })
 
 const app = express();
@@ -30,8 +31,6 @@ const storage = multer.diskStorage({
     }
 })
 
-const upload = multer({ storage: storage })
-
 //For the moment we include the test script already, we only require the homework submission for the demo
 app.post("/api/upload/testcase", upload.single('file'), (req, res) => {})
 
@@ -50,11 +49,11 @@ app.post("/api/upload/file", upload.single('file'), (req, res) => {
 
     try {
         if(req.file){
-            exec(`${pythonPath} ${scriptPath} "${result.groups["lang"]}"`, (error, stdout, stderr) => { 
+            exec(`${pythonPath} ${scriptPath} "${result.groups["lang"]}"`, (error, stdout, stderr) => {
                 console.log("Starting execution....")
                 if(error) {
                     res.status(500).send("Script execution failed")
-                    console.error("Error occured: ", stderr)
+                    console.error("Error occurred: ", stderr)
                 } else {
                     console.log(`Output: ${stdout}`)
                     res.json({output: stdout})
@@ -64,7 +63,7 @@ app.post("/api/upload/file", upload.single('file'), (req, res) => {
             res.status(500).send("File upload failed")
         }
     } catch(e) {
-        res.status(500).send(`Error occured: ${e.message}`)
+        res.status(500).send(`Error occurred: ${e.message}`)
     }
 })
 
