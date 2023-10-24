@@ -9,8 +9,23 @@ const cors = require('cors')
 const { exec } = require('child_process')
 const os = require('os')
 const database = require('./database_init')
-const upload = multer({ storage: storage })
+const utils = require('./utils')
 require('dotenv').config({ path: '../local.env' })
+
+/* Authentication */
+const passport = require('passport')
+const auth = require('./passport/strategy_options')
+const auth_token = require('./passport/bearer_token')
+const session = require('express-session')
+const jwt = require('jwt-simple');
+
+passport.serializeUser((user, done) => {
+  done(null, user.id)
+})
+
+passport.deserializeUser((id, done) => {
+  done(null, { id: id })
+})
 
 const app = express();
 
@@ -18,6 +33,9 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json())
 app.use(express.static(path.join(__dirname ,'/public')));
 app.use(cors())
+app.use(session({ secret: 'SECRET', resave: false, saveUninitialized: false }))
+app.use(passport.initialize())
+app.use(passport.session())
 
 //Setting storage settings
 const storage = multer.diskStorage({
@@ -30,6 +48,8 @@ const storage = multer.diskStorage({
         cb(null, file.originalname)
     }
 })
+
+const upload = multer({ storage: storage })
 
 //For the moment we include the test script already, we only require the homework submission for the demo
 app.post("/api/upload/testcase", upload.single('file'), (req, res) => {})
@@ -65,6 +85,53 @@ app.post("/api/upload/file", upload.single('file'), (req, res) => {
     } catch(e) {
         res.status(500).send(`Error occurred: ${e.message}`)
     }
+})
+
+/**
+ * @api {post} /api/signup Signup
+ * req.body.email: string
+ * req.body.password: string
+ */
+app.post('/api/signup', (req, res, next) => {
+    passport.authenticate('signup', { session: false },  async (err, user, info) => {
+        if (err) throw new Error(err)
+        if (user === false) return res.json(info)
+        const token = utils.generateToken(user.id)
+        try {
+            const decoded = jwt.decode(token, process.env.JWT_SECRET)
+            const user = await database.prisma.user.findUnique({
+                where: {
+                    id: decoded.id
+                }
+            })
+            console.log("New user: ", user)
+            return res.status(201).json({
+                status: 'success',
+                statusCode: res.statusCode,
+            })
+        } catch (error) {
+            console.error(error.message)
+            return res.status(401).send('An error occurred.')
+        }
+    })(req, res, next)
+})
+
+/**
+ * @api {post} /api/login Login
+ * req.body.email: string
+ * req.body.password: string
+ */
+app.post('/api/login', (req, res, next) => {
+    passport.authenticate('login', { session: false }, (err, user, info) => {
+        if (err) throw new Error(err)
+        if (user == false) return res.json(info)
+        const token = utils.generateToken(user.id)
+        return res.status(201).json({
+            status: 'success',
+            data: { message: 'Welcome back.', user, token },
+            statusCode: res.statusCode
+        })
+    })(req, res, next)
 })
 
 const ip = '0.0.0.0'
