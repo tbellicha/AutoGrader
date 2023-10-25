@@ -18,6 +18,8 @@ const auth = require('./passport/strategy_options')
 const auth_token = require('./passport/bearer_token')
 const session = require('express-session')
 const jwt = require('jwt-simple');
+const jwtoken = require('jsonwebtoken');
+const { UserRole } = require('@prisma/client');
 
 passport.serializeUser((user, done) => {
   done(null, user.id)
@@ -87,12 +89,63 @@ app.post("/api/upload/file", upload.single('file'), (req, res) => {
     }
 })
 
+
 /**
- * @api {post} /api/signup Signup
+ * @api {post} /api/signup/admin Signup as an Admin (Protected by JWT)
  * req.body.email: string
  * req.body.password: string
  */
-app.post('/api/signup', (req, res, next) => {
+app.post('/api/signup/admin', verifyAdminToken, (req, res, next) => {
+    passport.authenticate('signupAdmin', { session: false }, async (err, user, info) => {
+        if (err) throw new Error(err);
+        if (user === false) return res.json(info);
+        try {
+            const newUser = await database.prisma.user.findUnique({
+                where: {
+                    id: user.id
+                }
+            });
+            const updatedUser = await database.prisma.user.update({
+                where: { id: newUser.id },
+                data: { role: UserRole.ADMIN }
+            });
+            console.log("New user (Admin): ", updatedUser)
+            return res.status(201).json({
+                status: 'success',
+                statusCode: res.statusCode,
+            });
+        } catch (error) {
+            console.error(error.message);
+            return res.status(401).send('An error occurred.');
+        }
+    })(req, res, next);
+});
+
+function verifyAdminToken(req, res, next) {
+    try {
+        const token = req.headers['authorization'];
+        if (!token) {
+            return res.status(401).send('Access denied. Token is missing.');
+        }
+        jwtoken.verify(token, process.env.ADMIN_TOKEN, (err, payload) => {
+            if (err) {
+                console.log("Error when creating Admin user: ", err)
+                return res.status(403).send('Access denied. Invalid token.');
+            }
+            next();
+        });
+    } catch (error) {
+        console.log("Error when creating Admin user: ", error)
+        return res.status(403).send('Access denied. Invalid token.');
+    }
+}
+
+/**
+ * @api {post} /api/signup/student Signup as a student
+ * req.body.email: string
+ * req.body.password: string
+ */
+app.post('/api/signup/student', (req, res, next) => {
     passport.authenticate('signup', { session: false },  async (err, user, info) => {
         if (err) throw new Error(err)
         if (user === false) return res.json(info)
@@ -100,11 +153,12 @@ app.post('/api/signup', (req, res, next) => {
         try {
             const decoded = jwt.decode(token, process.env.JWT_SECRET)
             const user = await database.prisma.user.findUnique({
-                where: {
-                    id: decoded.id
-                }
+                where: { id: decoded.id }
             })
-            console.log("New user: ", user)
+            if (user.role !== UserRole.STUDENT) {
+                throw new Error('User is not a student.')
+            }
+            console.log("New user (Student): ", user)
             return res.status(201).json({
                 status: 'success',
                 statusCode: res.statusCode,

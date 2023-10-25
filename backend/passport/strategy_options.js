@@ -17,19 +17,44 @@ passport.use(
       const existsEmail = await database.prisma.user.findFirst({
         where: { email }
       })
-      if (existsEmail && existsEmail.mailVerification) {
+      if (existsEmail) {
         return cb(null, false, {
           message: 'Email already exists.',
           statusCode: 400
         })
       }
-      if (existsEmail) {
-        return cb(null, existsEmail)
-      }
       const user = await database.prisma.user.create({
         data: {
           email: email,
           password: await hash(password)
+        }
+      })
+      return cb(null, user)
+    } catch (err) {
+      console.error(err.message)
+      return cb(null, err)
+    }
+  })
+)
+
+
+passport.use(
+  'signupAdmin',
+  new Strategy(options, async (req, email, password, cb) => {
+    try {
+      const existsEmail = await database.prisma.user.findFirst({
+        where: { email }
+      })
+      if (existsEmail) {
+        return cb(null, false, {
+          message: 'Email already exists.',
+          statusCode: 400
+        })
+      }
+      const user = await database.prisma.user.create({
+        data: {
+          email: email,
+          password: await hash(password),
         }
       })
       return cb(null, user)
