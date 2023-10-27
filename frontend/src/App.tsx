@@ -1,19 +1,25 @@
-import "bootstrap/dist/css/bootstrap.min.css";
-import "./App.css";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
-import FilesUpload from "./components/FilesUpload";
+import routes from "./routes";
+
+import "./App.css";
 
 const App: React.FC = () => {
   return (
-    <div className="container" style={{ width: "600px" }}>
-      <div className="my-3">
-        <h3>AutoGrader</h3>
-        <h4>React Typescript Multiple Files Upload</h4>
-      </div>
-
-      <FilesUpload />
-    </div>
+    <>
+      <Router>
+        <Routes>
+          {routes.map((route, index) => (
+            <Route
+              key={index}
+              path={route.path}
+              element={<route.component />}
+            />
+          ))}
+        </Routes>
+      </Router>
+    </>
   );
-}
+};
 
 export default App;
