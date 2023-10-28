@@ -115,28 +115,39 @@ function verifyAdminToken(req, res, next) {
  * req.body.password: string
  */
 app.post('/api/signup/student', (req, res, next) => {
-    passport.authenticate('signup', { session: false },  async (err, user, info) => {
-        if (err) throw new Error(err)
-        if (user === false) return res.json(info)
-        const token = utils.generateToken(user.id)
-        try {
-            const decoded = jwt.decode(token, process.env.JWT_SECRET)
-            const user = await database.prisma.user.findUnique({
-                where: { id: decoded.id }
-            })
-            if (user.role !== UserRole.STUDENT) {
-                throw new Error('User is not a student.')
+  passport.authenticate('signup', { session: false }, async (err, user, info) => {
+    if (err) throw new Error(err);
+    if (user === false) return res.json(info);
+
+    const email = req.body.email;
+    const first_name = req.body.first_name;
+    const last_name = req.body.last_name;
+    const password = req.body.password;
+    const required_parameters = ['email', 'first_name', 'last_name', 'password'];
+    if (!email || !password || !first_name || !last_name) {
+        res.status(400).send('Missing required parameters: ' + required_parameters.filter(param => !req.body[param]).join(', '))
+        return
+    }
+    try {
+        const newUser = await database.prisma.user.findUnique({
+            where: {
+                id: user.id
             }
-            console.log("New user (Student): ", user)
-            return res.status(201).json({
-                status: 'success',
-                statusCode: res.statusCode,
-            })
-        } catch (error) {
-            console.error(error.message)
-            return res.status(401).send('An error occurred.')
-        }
-    })(req, res, next)
+        });
+        const updatedUser = await database.prisma.user.update({
+            where: { id: newUser.id },
+            data: { role: UserRole.STUDENT }
+        });
+        console.log("New student: ", updatedUser);
+        return res.status(201).json({
+            status: 'success',
+            statusCode: res.statusCode,
+        });
+    } catch (error) {
+        console.error(error.message);
+        return res.status(401).send('An error occurred.');
+    }
+  })(req, res, next);
 })
 
 /**
