@@ -23,10 +23,18 @@ passport.use(
           statusCode: 400
         })
       }
+      const student = await database.prisma.student.create({
+        data: {
+          email: req.body.email,
+          first_name: req.body.first_name,
+          last_name: req.body.last_name,
+        }
+      })
       const user = await database.prisma.user.create({
         data: {
           email: email,
-          password: await hash(password)
+          password: await hash(password),
+          student_id: student.id,
         }
       })
       return cb(null, user)
