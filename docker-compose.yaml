@@ -41,8 +41,6 @@ services:
     depends_on:
       backend:
         condition: service_started
-    ports:
-      - "5173:5173"
     network_mode: host
 
 volumes:
