@@ -188,6 +188,35 @@ app.post('/api/login', (req, res, next) => {
     })(req, res, next)
 })
 
+/**
+ * @api {get} /api/users List all users (Protected by JWT)
+ */
+app.get(
+  '/api/users',
+  passport.authenticate('jwt', { session: false }),
+  async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).send('Invalid token');
+      }
+
+      if (req.user.role !== UserRole.ADMIN && req.user.role !== UserRole.TEACHER) {
+        return res.status(401).send('Not enough permissions.');
+      }
+
+      const users = await database.prisma.user.findMany();
+      return res.status(200).json({
+        status: 'success',
+        data: { users },
+        statusCode: res.statusCode,
+      });
+    } catch (error) {
+      console.error('Error occurred:', error);
+      return res.status(500).send('An error occurred.');
+    }
+  }
+);
+
 const ip = '0.0.0.0'
 const port = process.env.PORT || 8080;
 
