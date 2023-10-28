@@ -23,37 +23,37 @@ enum UserRole {
 }
 
 model Assignment {
-  assignment_id String        @id @unique @default(cuid())
-  course_id     String
+  id            String        @id @unique @default(cuid())
   title         String
   description   String
   due_date      DateTime
-  Courses       Course        @relation(fields: [course_id], references: [course_id])
+  Courses       Course        @relation(fields: [course_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  course_id     String
   Submissions   Submission[]
 }
 
 model Course {
-  course_id   String        @id @unique @default(cuid())
+  id          String        @id @unique @default(cuid())
   course_code String
   course_name String
+  Teacher     Teacher       @relation(fields: [teacher_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
   teacher_id  String
-  Teacher     Teacher       @relation(fields: [teacher_id], references: [teacher_id])
   Assignments Assignment[]
   Enrollments Enrollment[]
 }
 
 model Enrollment {
-  enrollment_id String  @id @unique @default(cuid())
+  id            String  @id @unique @default(cuid())
+  Student       Student @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
   student_id    String
+  Course        Course  @relation(fields: [course_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
   course_id     String
-  Student       Student @relation(fields: [student_id], references: [student_id])
-  Course        Course  @relation(fields: [course_id], references: [course_id])
 }
 
 model Student {
-  student_id  String        @id @unique @default(cuid())
-  first_name  String
-  last_name   String
+  id          String        @id @unique @default(cuid())
+  first_name  String        @default("DefaultFirst")
+  last_name   String        @default("DefaultLast")
   email       String        @unique
   Enrollments Enrollment[]
   Submissions Submission[]
@@ -61,20 +61,20 @@ model Student {
 }
 
 model Submission {
-  submission_id   String      @id @unique @default(cuid())
-  assignment_id   String
-  student_id      String
+  id              String      @id @unique @default(cuid())
   submission_date DateTime
   score           Int
   comment         String
-  Assignment      Assignment  @relation(fields: [assignment_id], references: [assignment_id])
-  Student         Student     @relation(fields: [student_id], references: [student_id])
+  Student         Student     @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  student_id      String
+  Assignment      Assignment  @relation(fields: [assignment_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  assignment_id   String
 }
 
 model Teacher {
-  teacher_id String    @id @unique @default(cuid())
-  first_name String
-  last_name  String
+  id         String    @id @unique @default(cuid())
+  first_name String    @default("DefaultFirst")
+  last_name  String    @default("DefaultLast")
   email      String    @unique
   Courses    Course[]
   Users      User[]
@@ -82,12 +82,11 @@ model Teacher {
 
 model User {
   id         String    @id @unique @default(cuid())
-  student_id String?
-  teacher_id String?
   role       UserRole  @default(STUDENT)
   email      String
-  username   String    @default("Default username")
   password   String
-  Student    Student?  @relation(fields: [student_id], references: [student_id])
-  Teacher    Teacher?  @relation(fields: [teacher_id], references: [teacher_id])
+  Student    Student?  @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  student_id String?
+  Teacher    Teacher?  @relation(fields: [teacher_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  teacher_id String?
 }
