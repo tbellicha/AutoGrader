@@ -36,6 +36,13 @@ services:
     networks:
       - database_net
 
+  frontend:
+    build: ./frontend
+    depends_on:
+      backend:
+        condition: service_started
+    network_mode: host
+
 volumes:
   common:
 
