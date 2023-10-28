@@ -36,7 +36,7 @@ model Course {
   id          String        @id @unique @default(cuid())
   course_code String
   course_name String
-  Teacher     Teacher       @relation(fields: [teacher_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  Teacher     Teacher       @relation(fields: [teacher_id], references: [id])
   teacher_id  String
   Assignments Assignment[]
   Enrollments Enrollment[]
@@ -85,8 +85,8 @@ model User {
   role       UserRole  @default(STUDENT)
   email      String
   password   String
-  Student    Student?  @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  Student    Student?  @relation(fields: [student_id])
   student_id String?
-  Teacher    Teacher?  @relation(fields: [teacher_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  Teacher    Teacher?  @relation(fields: [teacher_id])
   teacher_id String?
 }
