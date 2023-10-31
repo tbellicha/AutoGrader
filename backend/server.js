@@ -60,8 +60,8 @@ app.post("/api/upload/file", upload.single('file'), async (req, res) => {
 
 /**
  * @api {post} /api/signup/admin Signup as an Admin (Protected by JWT)
- * req.body.email: string
- * req.body.password: string
+ * req.body.email: String
+ * req.body.password: String
  */
 app.post('/api/signup/admin', verifyAdminToken, (req, res, next) => {
   passport.authenticate('signupAdmin', { session: false }, async (err, user, info) => {
@@ -108,10 +108,10 @@ function verifyAdminToken(req, res, next) {
 
 /**
  * @api {post} /api/signup/student Signup as a student
- * req.body.email: string
- * req.body.password: string
- * req.body.first_name: string
- * req.body.last_name: string
+ * req.body.email: String
+ * req.body.password: String
+ * req.body.first_name: String
+ * req.body.last_name: String
  */
 app.post('/api/signup/student', (req, res, next) => {
   passport.authenticate('signup', { session: false }, async (err, user, info) => {
@@ -133,7 +133,7 @@ app.post('/api/signup/student', (req, res, next) => {
         });
         const updatedUser = await database.prisma.user.update({
             where: { id: newUser.id },
-            data: { role: UserRole.TEACHER }
+            data: { role: UserRole.STUDENT }
         });
         console.log("New student: ", updatedUser);
         return res.status(201).json({
@@ -149,8 +149,8 @@ app.post('/api/signup/student', (req, res, next) => {
 
 /**
  * @api {post} /api/login Login
- * req.body.email: string
- * req.body.password: string
+ * req.body.email: String
+ * req.body.password: String
  */
 app.post('/api/login', (req, res, next) => {
   passport.authenticate('login', { session: false }, (err, user, info) => {
@@ -190,9 +190,9 @@ app.get(
 
 /**
  * @api {post} /api/course/create Create a new course (Protected by JWT)
- * req.body.course_code: string
- * req.body.course_name: string
- * req.body.teacher_id: string
+ * req.body.course_code: String
+ * req.body.course_name: String
+ * req.body.teacher_id: String
  */
 app.post(
   '/api/course/create',
@@ -242,10 +242,10 @@ app.post(
 )
 
 /**
- * @api {post} /api/course/create Create a new course (Protected by JWT)
- * req.body.title: string
- * req.body.description: string
- * req.body.due_date: string
+ * @api {post} /api/course/:course_id/assignment/create Create a new Assignment to a Course (Protected by JWT)
+ * req.body.title: String
+ * req.body.description: String
+ * req.body.due_date: DateTime
  */
 app.post(
   '/api/course/:course_id/assignment/create',
@@ -297,10 +297,110 @@ app.post(
   }
 )
 
+/**
+ * @api {post} /api/course/:course_id/enroll Enroll to a course (Protected by JWT)
+ * req.body.title: String
+ * req.body.description: String
+ * req.body.due_date: String
+ */
+app.post(
+  '/api/course/:course_id/enroll',
+  passport.authenticate('jwt', { session: false }), async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).send('Invalid token');
+        }
+        const student_id = req.body.student_id;
+        const required_parameters = ['student_id'];
+        if (!student_id) {
+            res.status(400).send('Missing required parameters: ' + required_parameters.filter(param => !req.body[param]).join(', '))
+            return
+        }
+        const course = await database.prisma.course.findUnique({
+            where: { id: req.params.course_id },
+        })
+        if (!course) {
+            return res.status(400).send('Course does not exist.');
+        }
+        const student = await database.prisma.student.findUnique({
+            where: { id: student_id },
+        })
+        if (!student) {
+            return res.status(400).send('Student does not exist.');
+        }
+        const enrollment = await database.prisma.enrollment.create({
+            data: {
+                course_id: course.id,
+                student_id: student.id,
+            }
+        })
+        const updatedCourse = await database.prisma.course.update({
+            where: { id: course.id },
+            include: { Enrollments: true },
+            data: { Enrollments: { connect: { id: enrollment.id } } }
+        })
+        const updatedStudent = await database.prisma.student.update({
+            where: { id: student.id },
+            include: { Enrollments: true },
+            data: { Enrollments: { connect: { id: enrollment.id } } }
+        })
+        console.log("Updated Course: ", updatedCourse)
+        console.log("Updated Student: ", updatedStudent)
+        return res.status(200).json({ enrollment });
+    } catch (error) {
+        console.error('Error occurred:', error);
+        return res.status(500).send('An error occurred.');
+    }
+  }
+)
+
+async function includeFixtures() {
+    try {
+        const teacher = await database.prisma.teacher.create({
+        data: {
+            first_name: "John",
+            last_name: "Doe",
+            email: "john.doe@example.com"
+        }
+        });
+
+        const course = await database.prisma.course.create({
+        data: {
+            course_code: "CS 471",
+            course_name: "Capstone Project",
+            teacher_id: teacher.id,
+            Assignments: {
+                create: [
+                    {
+                        title: "Assignment 1",
+                        description: "Week 1",
+                        due_date: new Date('2023-11-01T00:00:00'),
+                    },
+                    {
+                        title: "Assignment 2",
+                        description: "Week 2",
+                        due_date: new Date('2023-11-15T00:00:00'),
+                    }
+                ]
+            },
+            Enrollments: {
+                create: []
+            }
+        },
+        include: { Assignments: true }
+        });
+
+        console.log("Created course: ", course);
+    } catch (error) {
+        console.error('Error occurred:', error);
+    }
+}
+
 const ip = '0.0.0.0'
 const port = process.env.PORT || 8080;
 
 app.listen(port, () => {
     console.log(`App listening on port ${port}`);
     console.log(path.join(__dirname, "server.js"));
+    // includeFixtures()
 });
