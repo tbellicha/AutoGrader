@@ -217,16 +217,25 @@ app.post(
             res.status(400).send('Missing required parameters: ' + required_parameters.filter(param => !req.body[param]).join(', '))
             return
         }
+        const teacher = await database.prisma.teacher.findUnique({
+            where: { id: teacher_id },
+        })
         const course = await database.prisma.course.create({
             data: {
                 course_code: course_code,
                 course_name: course_name,
-                teacher_id: teacher_id,
+                teacher_id: teacher.id,
                 Assignments: { create : [] },
                 Enrollments: { create : [] },
             }
         })
+        const updatedTeacher = await database.prisma.teacher.update({
+            where: { id: teacher.id },
+            include : { Courses: true },
+            data: { Courses: { connect: { id: course.id } } }
+        })
         console.log("New course: ", course)
+        console.log("Updated teacher: ", updatedTeacher)
         return res.status(200).json({ course });
     } catch (error) {
         console.error('Error occurred:', error);
