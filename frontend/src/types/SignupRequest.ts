@@ -9,8 +9,4 @@ interface SignupRequest {
     email: string;
     /** The password of the user. */
     password: string;
-    /** The first name of the user. */
-    firstName: string;
-    /** The last name of the user. */
-    lastName: string;
 }
