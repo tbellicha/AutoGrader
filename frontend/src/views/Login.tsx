@@ -10,13 +10,13 @@ const DASHBOARD_PATH = "/dashboard";
 const SIGNUP_PATH = "/signup";
 
 const Login: React.FC<any> = () => {
-    
+
     // useState hook to store error message
     const [error, setError] = useState("");
 
     // useNavigate hook to redirect to upload portal
     const navigate = useNavigate();
-   
+
     const handleLoginResponse = (username: string, password: string) => {
         console.log("Login requested");
         console.log(`Username: ${username}, Password: ${password}`);
@@ -45,13 +45,13 @@ const Login: React.FC<any> = () => {
     return (
         <>
             {
-                error && 
+                error &&
                 <div className="d-flex container justify-content-center align-items-center">
                     <Alert variant="danger" className="mt-3 w-50" dismissible><p className="text-center">Error: {error} </p></Alert>
                 </div>
             }
-            <LoginForm onLoginSubmit={handleLoginResponse} onSignupClick={handleSignupClick}/>
-        </>        
+            <LoginForm onLoginSubmit={handleLoginResponse} onSignupClick={handleSignupClick} />
+        </>
     );
 };
 

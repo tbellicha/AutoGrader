@@ -13,6 +13,10 @@ body {
   max-width: 330px;
 }
 
+#sign-up-form {
+  max-width: 330px;
+}
+
 .form-control:focus {
   z-index: 5;
 }
