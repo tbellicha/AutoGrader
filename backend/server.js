@@ -133,7 +133,7 @@ app.post('/api/signup/student', (req, res, next) => {
         });
         const updatedUser = await database.prisma.user.update({
             where: { id: newUser.id },
-            data: { role: UserRole.STUDENT }
+            data: { role: UserRole.TEACHER }
         });
         console.log("New student: ", updatedUser);
         return res.status(201).json({
@@ -215,6 +215,9 @@ app.post(
         const teacher = await database.prisma.teacher.findUnique({
             where: { id: teacher_id },
         })
+        if (!teacher) {
+            return res.status(400).send('Teacher does not exist.');
+        }
         const course = await database.prisma.course.create({
             data: {
                 course_code: course_code,
@@ -229,8 +232,63 @@ app.post(
             include : { Courses: true },
             data: { Courses: { connect: { id: course.id } } }
         })
-        console.log("New course: ", course)
         console.log("Updated teacher: ", updatedTeacher)
+        return res.status(200).json({ course });
+    } catch (error) {
+        console.error('Error occurred:', error);
+        return res.status(500).send('An error occurred.');
+    }
+  }
+)
+
+/**
+ * @api {post} /api/course/create Create a new course (Protected by JWT)
+ * req.body.title: string
+ * req.body.description: string
+ * req.body.due_date: string
+ */
+app.post(
+  '/api/course/:course_id/assignment/create',
+  passport.authenticate('jwt', { session: false }), async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).send('Invalid token');
+        }
+        if (req.user.role !== UserRole.ADMIN && req.user.role !== UserRole.TEACHER) {
+            return res.status(401).send('Not enough permissions.');
+        }
+        const title = req.body.title;
+        const description = req.body.description;
+        const due_date = req.body.due_date;
+        const required_parameters = ['title', 'description', 'due_date'];
+        if (!title || !description || !due_date) {
+            res.status(400).send('Missing required parameters: ' + required_parameters.filter(param => !req.body[param]).join(', '))
+            return
+        }
+        const course = await database.prisma.course.findUnique({
+            where: { id: req.params.course_id },
+        })
+        if (!course) {
+            return res.status(400).send('Course does not exist.');
+        }
+        if (req.user.role !== UserRole.ADMIN && course.teacher_id !== req.user.teacher_id) {
+            return res.status(401).send('Not enough permissions.');
+        }
+        const assignment = await database.prisma.assignment.create({
+            data: {
+                title: title,
+                description: description,
+                due_date: due_date,
+                course_id: course.id,
+                Submissions: { create : [] },
+            }
+        })
+        const updatedCourse = await database.prisma.course.update({
+            where: { id: course.id },
+            include: { Assignments: true },
+            data: { Assignments: { connect: { id: assignment.id } } }
+        })
+        console.log("Updated Course: ", updatedCourse)
         return res.status(200).json({ course });
     } catch (error) {
         console.error('Error occurred:', error);
