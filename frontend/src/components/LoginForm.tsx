@@ -1,31 +1,29 @@
 import React, { useState } from "react";
 
-import LoginService from "../services/LoginService";
-
 import {
   Container,
   Form, 
   Button
 } from "react-bootstrap";
 
-const LoginForm: React.FC<any> = (props) => {
+interface LoginFormProps {
+  onLoginSubmit: (username: string, password: string) => void;
+  onSignupClick: () => void;
+}
+
+const LoginForm: React.FC<any> = ({onLoginSubmit, onSignupClick}: LoginFormProps) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleLoginSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
-    const response = LoginService.login(email, password);
-    
-    response
-      .then(data => props.onLoginResponse(data))
-      .catch(error => console.error(error));
+    onLoginSubmit(email, password);
   };
 
   return (
     <>
       <Container id="main-container" className="d-grid h-100">
-        <Form id="sign-in-form" className="text-center w-100" onSubmit={handleSubmit}>
+        <Form id="sign-in-form" className="text-center w-100" onSubmit={handleLoginSubmit}>
           <img
             className="mb-4 bootstrap-logo"
             src="https://getbootstrap.com/docs/4.0/assets/brand/bootstrap-solid.svg"
@@ -66,6 +64,7 @@ const LoginForm: React.FC<any> = (props) => {
                 type="submit"
                 size="lg"
               >Login</Button>
+            <Button variant="link" size="sm" onClick={onSignupClick}>Signup</Button>
             </div>
             <p className="mt-5 text-muted">&copy; 2023</p>
         </Form>
