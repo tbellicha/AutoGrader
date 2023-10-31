@@ -23,11 +23,11 @@ const { UserRole } = require('@prisma/client');
 const { s3Uploadv3 } = require('./s3Service');
 
 passport.serializeUser((user, done) => {
-  done(null, user.id)
+    done(null, user.id)
 })
 
 passport.deserializeUser((id, done) => {
-  done(null, { id: id })
+    done(null, { id: id })
 })
 
 const app = express();
@@ -65,29 +65,27 @@ app.post("/api/upload/file", upload.single('file'), async (req, res) => {
  * req.body.password: string
  */
 app.post('/api/signup/admin', verifyAdminToken, (req, res, next) => {
-    passport.authenticate('signupAdmin', { session: false }, async (err, user, info) => {
-        if (err) throw new Error(err);
-        if (user === false) return res.json(info);
-        try {
-            const newUser = await database.prisma.user.findUnique({
-                where: {
-                    id: user.id
-                }
-            });
-            const updatedUser = await database.prisma.user.update({
-                where: { id: newUser.id },
-                data: { role: UserRole.ADMIN }
-            });
-            console.log("New user (Admin): ", updatedUser)
-            return res.status(201).json({
-                status: 'success',
-                statusCode: res.statusCode,
-            });
-        } catch (error) {
-            console.error(error.message);
-            return res.status(401).send('An error occurred.');
-        }
-    })(req, res, next);
+  passport.authenticate('signupAdmin', { session: false }, async (err, user, info) => {
+    if (err) throw new Error(err);
+    if (user === false) return res.json(info);
+    try {
+        const newUser = await database.prisma.user.findUnique({
+            where: { id: user.id }
+        });
+        const updatedUser = await database.prisma.user.update({
+            where: { id: newUser.id },
+            data: { role: UserRole.ADMIN }
+        });
+        console.log("New user (Admin): ", updatedUser)
+        return res.status(201).json({
+            status: 'success',
+            statusCode: res.statusCode,
+        });
+    } catch (error) {
+        console.error(error.message);
+        return res.status(401).send('An error occurred.');
+    }
+  })(req, res, next);
 });
 
 function verifyAdminToken(req, res, next) {
@@ -113,6 +111,8 @@ function verifyAdminToken(req, res, next) {
  * @api {post} /api/signup/student Signup as a student
  * req.body.email: string
  * req.body.password: string
+ * req.body.first_name: string
+ * req.body.last_name: string
  */
 app.post('/api/signup/student', (req, res, next) => {
   passport.authenticate('signup', { session: false }, async (err, user, info) => {
@@ -130,9 +130,7 @@ app.post('/api/signup/student', (req, res, next) => {
     }
     try {
         const newUser = await database.prisma.user.findUnique({
-            where: {
-                id: user.id
-            }
+            where: { id: user.id }
         });
         const updatedUser = await database.prisma.user.update({
             where: { id: newUser.id },
@@ -156,16 +154,17 @@ app.post('/api/signup/student', (req, res, next) => {
  * req.body.password: string
  */
 app.post('/api/login', (req, res, next) => {
-    passport.authenticate('login', { session: false }, (err, user, info) => {
-        if (err) throw new Error(err)
-        if (user == false) return res.json(info)
-        const token = utils.generateToken(user.id)
-        return res.status(201).json({
-            status: 'success',
-            data: { message: 'Welcome back.', user, token },
-            statusCode: res.statusCode
-        })
-    })(req, res, next)
+  passport.authenticate('login', { session: false }, (err, user, info) => {
+    if (err) throw new Error(err)
+    if (user == false) return res.json(info)
+    const token = utils.generateToken(user.id)
+    console.log("User logged in: ", user)
+    return res.status(201).json({
+        status: 'success',
+        data: { message: 'Welcome back.', user, token },
+        statusCode: res.statusCode
+    })
+  })(req, res, next)
 })
 
 /**
@@ -173,29 +172,27 @@ app.post('/api/login', (req, res, next) => {
  */
 app.get(
   '/api/users',
-  passport.authenticate('jwt', { session: false }),
-  async (req, res) => {
+  passport.authenticate('jwt', { session: false }), async (req, res) => {
     try {
-      if (!req.user) {
-        return res.status(401).send('Invalid token');
-      }
+        if (!req.user) {
+            return res.status(401).send('Invalid token');
+        }
+        if (req.user.role !== UserRole.ADMIN && req.user.role !== UserRole.TEACHER) {
+            return res.status(401).send('Not enough permissions.');
+        }
 
-      if (req.user.role !== UserRole.ADMIN && req.user.role !== UserRole.TEACHER) {
-        return res.status(401).send('Not enough permissions.');
-      }
-
-      const users = await database.prisma.user.findMany();
-      return res.status(200).json({
-        status: 'success',
-        data: { users },
-        statusCode: res.statusCode,
-      });
+        const users = await database.prisma.user.findMany();
+        return res.status(200).json({
+            status: 'success',
+            data: { users },
+            statusCode: res.statusCode,
+        });
     } catch (error) {
-      console.error('Error occurred:', error);
-      return res.status(500).send('An error occurred.');
+        console.error('Error occurred:', error);
+        return res.status(500).send('An error occurred.');
     }
   }
-);
+)
 
 const ip = '0.0.0.0'
 const port = process.env.PORT || 8080;
