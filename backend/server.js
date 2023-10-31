@@ -159,9 +159,8 @@ app.post('/api/login', (req, res, next) => {
     const token = utils.generateToken(user.id)
     console.log("User logged in: ", user)
     return res.status(201).json({
-        status: 'success',
-        data: { message: 'Welcome back.', user, token },
-        statusCode: res.statusCode
+        user: user,
+        token: token
     })
   })(req, res, next)
 })
@@ -181,11 +180,7 @@ app.get(
         }
 
         const users = await database.prisma.user.findMany();
-        return res.status(200).json({
-            status: 'success',
-            data: { users },
-            statusCode: res.statusCode,
-        });
+        return res.status(200).json({ users });
     } catch (error) {
         console.error('Error occurred:', error);
         return res.status(500).send('An error occurred.');
