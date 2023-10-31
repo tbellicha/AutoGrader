@@ -1,4 +1,5 @@
 import Login from './views/Login';
+import Signup from './views/Signup';
 import Upload from './views/Upload';
 
 const routes: Route[] = [
@@ -10,6 +11,10 @@ const routes: Route[] = [
     {
         path: '/dashboard',
         component: Upload,
+    },
+    {
+        path: '/signup',
+        component: Signup,
     }
 ];
 
