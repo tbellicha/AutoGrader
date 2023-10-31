@@ -17,11 +17,11 @@ const Login: React.FC<any> = () => {
     // useNavigate hook to redirect to upload portal
     const navigate = useNavigate();
 
-    const handleLoginResponse = (username: string, password: string) => {
+    const handleLoginResponse = (email: string, password: string) => {
         console.log("Login requested");
-        console.log(`Username: ${username}, Password: ${password}`);
+        console.log(`Email: ${email}, Password: ${password}`);
 
-        const loginPromise = LoginService.login(username, password);
+        const loginPromise = LoginService.login(email, password);
 
         loginPromise.then(({ data }) => {
             const { token } = data.data;

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Container } from 'react-bootstrap';
+import { Alert, Container } from 'react-bootstrap';
 import { Form, Button } from 'react-bootstrap';
 
 interface SignupFormProps {
@@ -8,22 +8,70 @@ interface SignupFormProps {
     onLoginClick: () => void;
 };
 
-const SignupForm: React.FC<any> = (/*{onSignupSubmit, onLoginClick}: SignupFormProps*/) => {
+const SignupForm: React.FC<any> = ({onSignupSubmit, onLoginClick}: SignupFormProps) => {
+
     // useState to store email, password, first name, last name
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
 
+    // useState to store validation error message
+    const [error, setError] = useState("");
 
     const handleSignupSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+        
+        // trim input fields
+        setEmail(email.trim());
+        setPassword(password.trim());
+        setFirstName(firstName.trim());
+        setLastName(lastName.trim());
+
+        // validate input fields
+        if (!validateInputFields()) {
+            setError("Invalid input fields");
+            return;
+        }
+
+        onSignupSubmit(email, password, firstName, lastName);
+    };
+
+    // check if input fields are valid (no empty fields, etc.)
+    // test email regex 
+    // test password is at least 8 characters long
+    // test first name and last name are not empty
+    const validateInputFields = () => {
+        const emailRegex = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
+        const passwordRegex = /^[a-zA-Z0-9!@#$%^&*]{8,}$/;
+
+        if (!email || !password || !firstName || !lastName) {
+            console.error("Empty fields");
+            return false;
+        }
+
+        if (!emailRegex.test(email)) {
+            console.error("Invalid email");
+            return false;
+        }
+
+        if (!passwordRegex.test(password)) {
+            console.error("Invalid password");
+            return false;
+        }
+
+        return true;
     };
 
     return (
         <>
             <Container className="d-grid h-100 align-items-center justify-content-center">
-                <Form id='sign-up-form' className='text-center w-100'>
+                { error && 
+                    <Alert variant="danger" className="mt-3" dismissible>
+                        <p className="text-center">Error: {error} </p></Alert>
+                }
+
+                <Form id='sign-up-form' className='text-center w-100' onSubmit={handleSignupSubmit}>
                     <img
                         className="mb-4 bootstrap-logo"
                         src="https://getbootstrap.com/docs/4.0/assets/brand/bootstrap-solid.svg"
@@ -83,7 +131,8 @@ const SignupForm: React.FC<any> = (/*{onSignupSubmit, onLoginClick}: SignupFormP
                         </Button>
                         <Button
                             variant="secondary"
-                            size="sm">
+                            size="sm"
+                            onClick={onLoginClick}>
                             Login
                         </Button>
                     </div>

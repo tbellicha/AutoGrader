@@ -62,9 +62,15 @@ const LoginForm: React.FC<any> = ({ onLoginSubmit, onSignupClick }: LoginFormPro
                         <Button
                             variant="primary"
                             type="submit"
-                            size="lg"
-                        >Login</Button>
-                        <Button variant="link" size="sm" onClick={onSignupClick}>Signup</Button>
+                            size="lg">
+                            Login
+                        </Button>
+                        <Button
+                        variant="link"
+                        size="sm"
+                        onClick={onSignupClick}>
+                            Signup
+                        </Button>
                     </div>
                     <p className="mt-5 text-muted">&copy; 2023</p>
                 </Form>

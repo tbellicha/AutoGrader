@@ -7,12 +7,13 @@
 interface SignupRequest {
     /** The email address of the user. */
     email: string;
-    /** The password of the user. */
-    password: string;
 
     /** The first name of the user. */
     first_name: string;
-    
+
     /** The last name of the user. */
     last_name: string;
+
+    /** The password of the user. */
+    password: string;
 }
