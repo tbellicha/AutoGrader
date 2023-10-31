@@ -58,7 +58,6 @@ app.post("/api/upload/file", upload.single('file'), async (req, res) => {
     }
 })
 
-
 /**
  * @api {post} /api/signup/admin Signup as an Admin (Protected by JWT)
  * req.body.email: string
@@ -187,6 +186,48 @@ app.get(
             data: { users },
             statusCode: res.statusCode,
         });
+    } catch (error) {
+        console.error('Error occurred:', error);
+        return res.status(500).send('An error occurred.');
+    }
+  }
+)
+
+/**
+ * @api {post} /api/course/create Create a new course (Protected by JWT)
+ * req.body.course_code: string
+ * req.body.course_name: string
+ * req.body.teacher_id: string
+ */
+app.post(
+  '/api/course/create',
+  passport.authenticate('jwt', { session: false }), async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).send('Invalid token');
+        }
+        if (req.user.role !== UserRole.ADMIN && req.user.role !== UserRole.TEACHER) {
+            return res.status(401).send('Not enough permissions.');
+        }
+        const course_code = req.body.course_code;
+        const course_name = req.body.course_name;
+        const teacher_id = req.body.teacher_id;
+        const required_parameters = ['course_name', 'course_code', 'teacher_id'];
+        if (!course_code || !course_name || !teacher_id) {
+            res.status(400).send('Missing required parameters: ' + required_parameters.filter(param => !req.body[param]).join(', '))
+            return
+        }
+        const course = await database.prisma.course.create({
+            data: {
+                course_code: course_code,
+                course_name: course_name,
+                teacher_id: teacher_id,
+                Assignments: { create : [] },
+                Enrollments: { create : [] },
+            }
+        })
+        console.log("New course: ", course)
+        return res.status(200).json({ course });
     } catch (error) {
         console.error('Error occurred:', error);
         return res.status(500).send('An error occurred.');
