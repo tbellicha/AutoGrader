@@ -9,6 +9,44 @@ import { Alert } from "react-bootstrap";
 const DASHBOARD_PATH = "/dashboard";
 const SIGNUP_PATH = "/signup";
 
+/**
+ * Represents the status code of a HTTP response.
+ * It can be a number or undefined.
+ */
+type StatusCode = number | undefined;
+
+/**
+ * Represents a token that can be either a string or undefined.
+ */
+type Token = string | undefined;
+
+/**
+ * Represents a message that can be either a string or undefined.
+ */
+type Message = string | undefined;
+
+/**
+ * Represents the data returned from a login request.
+ * @property {Token} [token] - The authentication token.
+ * @property {object} [user] - The user object.
+ * @property {string} [message] - A message related to the login request.
+ * @property {StatusCode} [statusCode] - The status code of the login request.
+ */
+type LoginData = {
+    token?: Token,
+    user?: object,
+    message?: Message,
+    statusCode?: StatusCode,
+};
+
+/**
+ * Response object returned by the login API endpoint.
+ */
+type LoginResponse = {
+    data: LoginData,
+    status: number,
+};
+
 const Login: React.FC<any> = () => {
 
     // useState hook to store error message
@@ -23,17 +61,44 @@ const Login: React.FC<any> = () => {
 
         const loginPromise = LoginService.login(email, password);
 
-        loginPromise.then(({ data }) => {
-            const { token } = data.data;
 
-            // set the jwt token in session storage
-            sessionStorage.setItem("jwt", token);
 
-            // redirect to dashboard
+        loginPromise.then((response: LoginResponse) => {
+            const data = response.data;
+
+            // enumerate the fields in the response
+            for (const [key, value] of Object.entries(data)) {
+                console.log(`${key}: ${value}`);
+            }
+
+            // response changes base on whether the request was successful or not
+            // if unsuccessful, response.data.statusCode will be set
+            // if successful, response.data.statusCode will be undefined
+            const statusCode = data.statusCode;
+
+            // if statusCode is undefined, then the login was successful
+            // otherwise, the login was unsuccessful
+            if (statusCode !== undefined) {
+                setError(`Login failed: ${data.message}`);
+                return;
+            }
+
+            // data will have 
+            // - token: jwt token for the user to authenticate
+            // - user: the user object
+            const token = data.token;
+            console.log(`Token: ${token}`);
+
+            if (token === undefined) {
+                setError(`Login failed: ${data.message}`);
+                return;
+            }
+
+            sessionStorage.setItem("token", token);
             navigate(DASHBOARD_PATH);
         }).catch((error) => {
             console.error(`${error}`);
-            setError("Login failed");
+            setError(`Login failed: ${error}`);
         });
     };
 
