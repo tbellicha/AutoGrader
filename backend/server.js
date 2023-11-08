@@ -116,7 +116,12 @@ function verifyAdminToken(req, res, next) {
 app.post('/api/signup/student', (req, res, next) => {
   passport.authenticate('signup', { session: false }, async (err, user, info) => {
     if (err) throw new Error(err);
-    if (user === false) return res.json(info);
+    if (user == false) {
+        const signupInfoMessage = {
+            message: info.message
+        }
+        return res.status(info.statusCode).json(signupInfoMessage)
+    }
 
     const email = req.body.email;
     const first_name = req.body.first_name;
@@ -136,10 +141,7 @@ app.post('/api/signup/student', (req, res, next) => {
             data: { role: UserRole.STUDENT }
         });
         console.log("New student: ", updatedUser);
-        return res.status(201).json({
-            status: 'success',
-            statusCode: res.statusCode,
-        });
+        return res.status(201).json({});
     } catch (error) {
         console.error(error.message);
         return res.status(401).send('An error occurred.');
@@ -155,10 +157,15 @@ app.post('/api/signup/student', (req, res, next) => {
 app.post('/api/login', (req, res, next) => {
   passport.authenticate('login', { session: false }, (err, user, info) => {
     if (err) throw new Error(err)
-    if (user == false) return res.json(info)
+    if (user == false) {
+        const loginInfoMessage = {
+            message: info.message
+        }
+        return res.status(info.statusCode).json(loginInfoMessage)
+    }
     const token = utils.generateToken(user.id)
     console.log("User logged in: ", user)
-    return res.status(201).json({
+    return res.status(200).json({
         user: user,
         token: token
     })
@@ -458,5 +465,5 @@ const port = process.env.PORT || 8080;
 app.listen(port, () => {
     console.log(`App listening on port ${port}`);
     console.log(path.join(__dirname, "server.js"));
-    // includeFixtures()
+    includeFixtures()
 });
