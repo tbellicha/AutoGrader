@@ -56,7 +56,7 @@ passport.use(
       if (existsEmail) {
         return cb(null, false, {
           message: 'Email already exists.',
-          statusCode: 400
+          statusCode: 409
         })
       }
       const user = await database.prisma.user.create({
@@ -85,7 +85,7 @@ passport.use(
       if (!user)
         return cb(null, false, {
           message: 'No user found.',
-          statusCode: 400
+          statusCode: 401
         })
       const validPassword = await compare(password, user.password)
       if (!validPassword)
