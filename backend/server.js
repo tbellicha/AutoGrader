@@ -361,48 +361,6 @@ app.post(
   }
 )
 
-async function includeFixtures() {
-    try {
-        const teacher = await database.prisma.teacher.create({
-        data: {
-            first_name: "John",
-            last_name: "Doe",
-            email: "john.doe@example.com"
-        }
-        });
-
-        const course = await database.prisma.course.create({
-        data: {
-            course_code: "CS 471",
-            course_name: "Capstone Project",
-            teacher_id: teacher.id,
-            Assignments: {
-                create: [
-                    {
-                        title: "Assignment 1",
-                        description: "Week 1",
-                        due_date: new Date('2023-11-01T00:00:00'),
-                    },
-                    {
-                        title: "Assignment 2",
-                        description: "Week 2",
-                        due_date: new Date('2023-11-15T00:00:00'),
-                    }
-                ]
-            },
-            Enrollments: {
-                create: []
-            }
-        },
-        include: { Assignments: true }
-        });
-
-        console.log("Created course: ", course);
-    } catch (error) {
-        console.error('Error occurred:', error);
-    }
-}
-
 /**
  * @api {put} /api/users/:userId Manage an user (Protected by JWT)
  */
@@ -459,11 +417,53 @@ app.put(
     }
 );
 
+async function includeFixtures() {
+    try {
+        const teacher = await database.prisma.teacher.create({
+        data: {
+            first_name: "John",
+            last_name: "Doe",
+            email: "john.doe@example.com"
+        }
+        });
+
+        const course = await database.prisma.course.create({
+        data: {
+            course_code: "CS 471",
+            course_name: "Capstone Project",
+            teacher_id: teacher.id,
+            Assignments: {
+                create: [
+                    {
+                        title: "Assignment 1",
+                        description: "Week 1",
+                        due_date: new Date('2023-11-01T00:00:00'),
+                    },
+                    {
+                        title: "Assignment 2",
+                        description: "Week 2",
+                        due_date: new Date('2023-11-15T00:00:00'),
+                    }
+                ]
+            },
+            Enrollments: {
+                create: []
+            }
+        },
+        include: { Assignments: true }
+        });
+
+        console.log("Created course: ", course);
+    } catch (error) {
+        console.error('Error occurred:', error);
+    }
+}
+
 const ip = '0.0.0.0'
 const port = process.env.PORT || 8080;
 
 app.listen(port, () => {
     console.log(`App listening on port ${port}`);
     console.log(path.join(__dirname, "server.js"));
-    includeFixtures()
+    // includeFixtures()
 });
