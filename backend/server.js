@@ -382,7 +382,7 @@ app.put(
             const { email, password, role } = req.body;
             const updatedData = {};
             if (email) updatedData.email = email;
-            if (password) updatedData.password = password;
+            if (password) updatedData.password = await hash(password);
             if (role) updatedData.role = role;
 
             const updatedUser = await database.prisma.user.update({
@@ -398,7 +398,7 @@ app.put(
             const { email, password } = req.body;
             const updatedData = {};
             if (email) updatedData.email = email;
-            if (password) updatedData.password = password;
+            if (password) updatedData.password = await hash(password);
 
             const updatedUser = await database.prisma.user.update({
                 where: { id: targetUser.id },
