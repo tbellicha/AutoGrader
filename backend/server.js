@@ -361,6 +361,62 @@ app.post(
   }
 )
 
+/**
+ * @api {put} /api/users/:userId Manage an user (Protected by JWT)
+ */
+app.put(
+  '/api/users/:userId',
+  passport.authenticate('jwt', { session: false }), async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).send('Invalid token');
+        }
+        const targetUser = await database.prisma.user.findUnique({
+            where: { id: req.params.userId },
+        });
+        if (!targetUser) {
+            return res.status(404).send('User not found.');
+        }
+
+        if (req.user.role === UserRole.ADMIN) {
+            const { email, password, role } = req.body;
+            const updatedData = {};
+            if (email) updatedData.email = email;
+            if (password) updatedData.password = password;
+            if (role) updatedData.role = role;
+
+            const updatedUser = await database.prisma.user.update({
+                where: { id: targetUser.id },
+                data: { ...updatedData },
+            });
+
+            console.log("Updated user: ", updatedUser);
+            return res.status(200).json({ user: updatedUser });
+        } else if (req.user.role === UserRole.STUDENT) {
+            if (req.user.id !== targetUser.id)
+                return res.status(401).send('Not enough permissions.');
+            const { email, password } = req.body;
+            const updatedData = {};
+            if (email) updatedData.email = email;
+            if (password) updatedData.password = password;
+
+            const updatedUser = await database.prisma.user.update({
+                where: { id: targetUser.id },
+                data: { ...updatedData },
+            });
+
+            console.log("Updated user: ", updatedUser);
+            return res.status(200).json({ user: updatedUser });
+        } else {
+            return res.status(401).send('Not enough permissions.');
+        }
+        } catch (error) {
+        console.error('Error occurred:', error);
+        return res.status(500).send('An error occurred.');
+        }
+    }
+);
+
 async function includeFixtures() {
     try {
         const teacher = await database.prisma.teacher.create({
@@ -409,5 +465,5 @@ const port = process.env.PORT || 8080;
 app.listen(port, () => {
     console.log(`App listening on port ${port}`);
     console.log(path.join(__dirname, "server.js"));
-    includeFixtures()
+    // includeFixtures()
 });
