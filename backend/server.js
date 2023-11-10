@@ -493,6 +493,29 @@ async function includeFixtures() {
                 email: "john.doe@example.com"
             }
         });
+        const student = await database.prisma.student.create({
+            data: {
+                first_name: "Jane",
+                last_name: "Doe",
+                email: "student@example.com"
+            }
+        });
+        const user = await database.prisma.user.create({
+            data: {
+                email: teacher.email,
+                password: await utils.hash("password"),
+                teacher_id: teacher.id,
+                role: UserRole.TEACHER
+            }
+        });
+        const user2 = await database.prisma.user.create({
+            data: {
+                email: student.email,
+                password: await utils.hash("password"),
+                student_id: student.id,
+                role: UserRole.STUDENT
+            }
+        });
 
         const course = await database.prisma.course.create({
         data: {
