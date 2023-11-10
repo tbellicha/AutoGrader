@@ -317,6 +317,9 @@ app.post(
         if (!req.user) {
             return res.status(401).send('Invalid token');
         }
+        if (req.user.role !== UserRole.ADMIN && (req.user.role !== UserRole.TEACHER || req.user.teacher_id !== req.params.teacher_id)) {
+            return res.status(401).send('Not enough permissions.');
+        }
         const student_id = req.body.student_id;
         const required_parameters = ['student_id'];
         if (!student_id) {
@@ -449,12 +452,36 @@ app.put(
         } else {
             return res.status(401).send('Not enough permissions.');
         }
-        } catch (error) {
+    } catch (error) {
         console.error('Error occurred:', error);
         return res.status(500).send('An error occurred.');
-        }
     }
+  }
 );
+
+/**
+ * @api {get} /api/students List all students (Protected by JWT)
+ */
+app.get(
+  '/api/students',
+  passport.authenticate('jwt', { session: false }), async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).send('Invalid token');
+        }
+        if (req.user.role !== UserRole.ADMIN && req.user.role !== UserRole.TEACHER) {
+            return res.status(401).send('Not enough permissions.');
+        }
+        const students = await database.prisma.student.findMany({
+            include: { Enrollments: true },
+        });
+        return res.status(200).json({ students });
+    } catch (error) {
+        console.error('Error occurred:', error);
+        return res.status(500).send('An error occurred.');
+    }
+  }
+)
 
 /**
  * @api {get} /api/teachers/:teacherId List all courses of a teacher (Protected by JWT)
