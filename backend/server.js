@@ -385,10 +385,49 @@ app.put(
             if (password) updatedData.password = await hash(password);
             if (role) updatedData.role = role;
 
-            const updatedUser = await database.prisma.user.update({
+            const user = await database.prisma.user.findUnique({
                 where: { id: targetUser.id },
-                data: { ...updatedData },
             });
+            if (user.role != updatedData.role) {
+                if (updatedData.role === UserRole.TEACHER) {
+                    const teacher = await database.prisma.teacher.create({
+                        data: {
+                            email: user.email,
+                            first_name: user.first_name,
+                            last_name: user.last_name,
+                        }
+                    });
+                    const updatedUser = await database.prisma.user.update({
+                        where: { id: user.id },
+                        data: {
+                            role: UserRole.TEACHER,
+                            student_id: null,
+                            teacher_id: teacher.id
+                        },
+                    });
+                    console.log("Updated user: ", updatedUser);
+                    return res.status(200).json({ user: updatedUser });
+                }
+                else if (updatedData.role === UserRole.STUDENT) {
+                    const student = await database.prisma.student.create({
+                        data: {
+                            email: user.email,
+                            first_name: user.first_name,
+                            last_name: user.last_name,
+                        }
+                    });
+                    const updatedUser = await database.prisma.user.update({
+                        where: { id: user.id },
+                        data: {
+                            role: UserRole.STUDENT,
+                            teacher_id: null,
+                            student_id: student.id
+                        },
+                    });
+                    console.log("Updated user: ", updatedUser);
+                    return res.status(200).json({ user: updatedUser });
+                }
+            }
 
             console.log("Updated user: ", updatedUser);
             return res.status(200).json({ user: updatedUser });
@@ -417,14 +456,42 @@ app.put(
     }
 );
 
+/**
+ * @api {get} /api/teachers/:teacherId List all courses of a teacher (Protected by JWT)
+ */
+app.get('/api/teachers/:teacherId',
+  passport.authenticate('jwt', { session: false }), async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).send('Invalid token');
+        }
+        if (req.user.role !== UserRole.ADMIN && req.params.teacherId !== req.user.teacher_id) {
+            return res.status(401).send('Not enough permissions.');
+        }
+        const teacher = await database.prisma.teacher.findUnique({
+            where: { id: req.params.teacherId },
+            include: { Courses: true }
+        })
+        if (!teacher) {
+            return res.status(400).send('Teacher does not exist.');
+        }
+        console.log("Teacher: ", teacher)
+        return res.status(200).json({ teacher });
+    } catch (error) {
+        console.error('Error occurred:', error);
+        return res.status(500).send('An error occurred.');
+    }
+  }
+);
+
 async function includeFixtures() {
     try {
         const teacher = await database.prisma.teacher.create({
-        data: {
-            first_name: "John",
-            last_name: "Doe",
-            email: "john.doe@example.com"
-        }
+            data: {
+                first_name: "John",
+                last_name: "Doe",
+                email: "john.doe@example.com"
+            }
         });
 
         const course = await database.prisma.course.create({
