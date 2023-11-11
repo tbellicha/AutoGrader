@@ -365,6 +365,36 @@ app.post(
 )
 
 /**
+ * @api {get} /api/course/:course_id/students List all students of a course (Protected by JWT)
+ */
+app.get('/api/course/:course_id/students',
+  passport.authenticate('jwt', { session: false }), async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).send('Invalid token');
+        }
+        if (req.user.role !== UserRole.ADMIN && (req.user.role !== UserRole.TEACHER || req.user.teacher_id !== req.params.teacher_id)) {
+            return res.status(401).send('Not enough permissions.');
+        }
+        const course = await database.prisma.course.findUnique({
+            where: { id: req.params.course_id },
+        })
+        if (!course) {
+            return res.status(400).send('Course does not exist.');
+        }
+        const students = await database.prisma.student.findMany({
+            where: { Enrollments: { some: { course_id: course.id } } }
+        })
+        console.log("Students: ", students)
+        return res.status(200).json({ students });
+    } catch (error) {
+        console.error('Error occurred:', error);
+        return res.status(500).send('An error occurred.');
+    }
+  }
+)
+
+/**
  * @api {put} /api/users/:userId Manage an user (Protected by JWT)
  */
 app.put(
