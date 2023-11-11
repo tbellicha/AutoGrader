@@ -421,18 +421,26 @@ app.put(
             const user = await database.prisma.user.findUnique({
                 where: { id: targetUser.id },
             });
+            const newEmail = updatedData.email ?? user.email;
+            var updatedUser = {}
             if (user.role != updatedData.role) {
                 if (updatedData.role === UserRole.TEACHER) {
+                    if (user.role === UserRole.STUDENT) {
+                        const student = await database.prisma.student.delete({
+                            where: { id: user.student_id }
+                        })
+                    }
                     const teacher = await database.prisma.teacher.create({
                         data: {
-                            email: user.email,
+                            email: newEmail,
                             first_name: user.first_name,
                             last_name: user.last_name,
                         }
                     });
-                    const updatedUser = await database.prisma.user.update({
+                    updatedUser = await database.prisma.user.update({
                         where: { id: user.id },
                         data: {
+                            email: newEmail,
                             role: UserRole.TEACHER,
                             student_id: null,
                             teacher_id: teacher.id
@@ -442,16 +450,22 @@ app.put(
                     return res.status(200).json({ user: updatedUser });
                 }
                 else if (updatedData.role === UserRole.STUDENT) {
+                    if (user.role === UserRole.TEACHER) {
+                        const teacher = await database.prisma.teacher.delete({
+                            where: { id: user.teacher_id }
+                        })
+                    }
                     const student = await database.prisma.student.create({
                         data: {
-                            email: user.email,
+                            email: newEmail,
                             first_name: user.first_name,
                             last_name: user.last_name,
                         }
                     });
-                    const updatedUser = await database.prisma.user.update({
+                    updatedUser = await database.prisma.user.update({
                         where: { id: user.id },
                         data: {
+                            email: newEmail,
                             role: UserRole.STUDENT,
                             teacher_id: null,
                             student_id: student.id
@@ -460,10 +474,14 @@ app.put(
                     console.log("Updated user: ", updatedUser);
                     return res.status(200).json({ user: updatedUser });
                 }
+            } else {
+                updatedUser = await database.prisma.user.update({
+                    where: { id: user.id },
+                    data: { ...updatedData },
+                });
+                console.log("Updated user: ", updatedUser);
+                return res.status(200).json({ user: updatedUser });
             }
-
-            console.log("Updated user: ", updatedUser);
-            return res.status(200).json({ user: updatedUser });
         } else if (req.user.role === UserRole.STUDENT) {
             if (req.user.id !== targetUser.id)
                 return res.status(401).send('Not enough permissions.');
