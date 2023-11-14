@@ -365,6 +365,36 @@ app.post(
 )
 
 /**
+ * @api {get} /api/course/:course_id/students List all students of a course (Protected by JWT)
+ */
+app.get('/api/course/:course_id/students',
+  passport.authenticate('jwt', { session: false }), async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).send('Invalid token');
+        }
+        if (req.user.role !== UserRole.ADMIN && (req.user.role !== UserRole.TEACHER || req.user.teacher_id !== req.params.teacher_id)) {
+            return res.status(401).send('Not enough permissions.');
+        }
+        const course = await database.prisma.course.findUnique({
+            where: { id: req.params.course_id },
+        })
+        if (!course) {
+            return res.status(400).send('Course does not exist.');
+        }
+        const students = await database.prisma.student.findMany({
+            where: { Enrollments: { some: { course_id: course.id } } }
+        })
+        console.log("Students: ", students)
+        return res.status(200).json({ students });
+    } catch (error) {
+        console.error('Error occurred:', error);
+        return res.status(500).send('An error occurred.');
+    }
+  }
+)
+
+/**
  * @api {put} /api/users/:userId Manage an user (Protected by JWT)
  */
 app.put(
@@ -391,18 +421,26 @@ app.put(
             const user = await database.prisma.user.findUnique({
                 where: { id: targetUser.id },
             });
+            const newEmail = updatedData.email ?? user.email;
+            var updatedUser = {}
             if (user.role != updatedData.role) {
                 if (updatedData.role === UserRole.TEACHER) {
+                    if (user.role === UserRole.STUDENT) {
+                        const student = await database.prisma.student.delete({
+                            where: { id: user.student_id }
+                        })
+                    }
                     const teacher = await database.prisma.teacher.create({
                         data: {
-                            email: user.email,
+                            email: newEmail,
                             first_name: user.first_name,
                             last_name: user.last_name,
                         }
                     });
-                    const updatedUser = await database.prisma.user.update({
+                    updatedUser = await database.prisma.user.update({
                         where: { id: user.id },
                         data: {
+                            email: newEmail,
                             role: UserRole.TEACHER,
                             student_id: null,
                             teacher_id: teacher.id
@@ -412,16 +450,22 @@ app.put(
                     return res.status(200).json({ user: updatedUser });
                 }
                 else if (updatedData.role === UserRole.STUDENT) {
+                    if (user.role === UserRole.TEACHER) {
+                        const teacher = await database.prisma.teacher.delete({
+                            where: { id: user.teacher_id }
+                        })
+                    }
                     const student = await database.prisma.student.create({
                         data: {
-                            email: user.email,
+                            email: newEmail,
                             first_name: user.first_name,
                             last_name: user.last_name,
                         }
                     });
-                    const updatedUser = await database.prisma.user.update({
+                    updatedUser = await database.prisma.user.update({
                         where: { id: user.id },
                         data: {
+                            email: newEmail,
                             role: UserRole.STUDENT,
                             teacher_id: null,
                             student_id: student.id
@@ -430,10 +474,14 @@ app.put(
                     console.log("Updated user: ", updatedUser);
                     return res.status(200).json({ user: updatedUser });
                 }
+            } else {
+                updatedUser = await database.prisma.user.update({
+                    where: { id: user.id },
+                    data: { ...updatedData },
+                });
+                console.log("Updated user: ", updatedUser);
+                return res.status(200).json({ user: updatedUser });
             }
-
-            console.log("Updated user: ", updatedUser);
-            return res.status(200).json({ user: updatedUser });
         } else if (req.user.role === UserRole.STUDENT) {
             if (req.user.id !== targetUser.id)
                 return res.status(401).send('Not enough permissions.');
