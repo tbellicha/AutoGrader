@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import LoginForm from "../components/LoginForm";
 import LoginService from "../services/LoginService";
 
-import { Alert } from "react-bootstrap";
+import Alert from "react-bootstrap/Alert";
 
 const DASHBOARD_PATH = "/dashboard";
 const SIGNUP_PATH = "/signup";
