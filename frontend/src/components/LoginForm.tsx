@@ -7,22 +7,42 @@ import {
 } from "react-bootstrap";
 
 interface LoginFormProps {
-    onLoginSubmit: (username: string, password: string) => void;
+    onLoginSubmit: (email: string, password: string) => Promise<string | null>;
     onSignupClick: () => void;
-}
+  }
 
-const LoginForm: React.FC<any> = ({ onLoginSubmit, onSignupClick }: LoginFormProps) => {
+  const LoginForm: React.FC<LoginFormProps> = ({
+    onLoginSubmit,
+    onSignupClick,
+  }: LoginFormProps) => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-
-    const handleLoginSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        onLoginSubmit(email, password);
+    const [token, setToken] = useState<string | null>(null);
+  
+    const handleLoginSubmit = async (
+      event: React.FormEvent<HTMLFormElement>
+    ) => {
+      event.preventDefault();
+      try {
+        const receivedToken = await onLoginSubmit(email, password);
+  
+        if (receivedToken) {
+          setToken(receivedToken);
+          console.log("Received token:", receivedToken);
+        }
+      } catch (error) {
+        console.error("Login failed:", error);
+      }
     };
 
     return (
         <>
             <Container id="main-container" className="d-grid h-100">
+            <Form
+          id="sign-in-form"
+          className="text-center w-100"
+          onSubmit={handleLoginSubmit}
+        >
                 <Form id="sign-in-form" className="text-center w-100" onSubmit={handleLoginSubmit}>
                     <img
                         className="mb-4 bootstrap-logo"
@@ -59,24 +79,19 @@ const LoginForm: React.FC<any> = ({ onLoginSubmit, onSignupClick }: LoginFormPro
                         />
                     </Form.Group>
                     <div className="d-grid">
-                        <Button
-                            variant="primary"
-                            type="submit"
-                            size="lg">
-                            Login
-                        </Button>
-                        <Button
-                        variant="link"
-                        size="sm"
-                        onClick={onSignupClick}>
-                            Signup
-                        </Button>
-                    </div>
-                    <p className="mt-5 text-muted">&copy; 2023</p>
-                </Form>
-            </Container>
-        </>
-    );
+            <Button variant="primary" type="submit" size="lg">
+              Login
+            </Button>
+            <Button variant="link" size="sm" onClick={onSignupClick}>
+              Signup
+            </Button>
+          </div>
+          <p className="mt-5 text-muted">&copy; 2023</p>
+        </Form>
+        </Form>
+      </Container>
+    </>
+  );
 };
 
 export default LoginForm;
