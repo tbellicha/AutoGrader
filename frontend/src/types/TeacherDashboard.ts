@@ -1,9 +1,10 @@
-
 export interface Course {
   id: number;
   course_name: string;
   course_code: string;
   teacher_id: number;
+  Assignments: Assignment[];
+  Enrollments: Enrollment[];
 }
 
 export interface Assignment {
@@ -11,7 +12,14 @@ export interface Assignment {
   title: string;
   description: string;
   due_date: string;
-  course_id: number;
+}
+
+export interface Student {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  Enrollments: Enrollment[];
 }
 
 export interface Enrollment {
