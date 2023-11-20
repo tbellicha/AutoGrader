@@ -249,6 +249,28 @@ app.post(
 )
 
 /**
+ * @api {get} /api/course/:courseId Get course information (Protected by JWT)
+ */
+app.get(
+  '/api/course/:courseId',
+  passport.authenticate('jwt', { session: false }), async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).send('Invalid token');
+        }
+        const course = await database.prisma.course.findUnique({
+            where: { id: req.params.courseId },
+            include: { Assignments: true, Enrollments: true }
+        })
+        return res.status(200).json({ course });
+    } catch (error) {
+        console.error('Error occurred:', error);
+        return res.status(500).send('An error occurred.');
+    }
+  }
+)
+
+/**
  * @api {post} /api/course/:course_id/assignment/create Create a new Assignment to a Course (Protected by JWT)
  * req.body.title: String
  * req.body.description: String
@@ -674,5 +696,5 @@ const port = process.env.PORT || 8080;
 app.listen(port, () => {
     console.log(`App listening on port ${port}`);
     console.log(path.join(__dirname, "server.js"));
-    // includeFixtures()
+    includeFixtures()
 });
