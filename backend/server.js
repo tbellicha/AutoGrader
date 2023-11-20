@@ -532,7 +532,35 @@ app.get(
 )
 
 /**
- * @api {get} /api/teachers/:teacherId List all courses of a teacher (Protected by JWT)
+ * @api {get} /api/students/:studentId Get student information (Protected by JWT)
+ */
+app.get(
+  '/api/students/:studentId',
+  passport.authenticate('jwt', { session: false }), async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).send('Invalid token');
+        }
+        if (req.user.role !== UserRole.ADMIN && req.params.studentId !== req.user.student_id) {
+            return res.status(401).send('Not enough permissions.');
+        }
+        const student = await database.prisma.student.findUnique({
+            where : { id: req.params.studentId },
+            include: { Enrollments: true },
+        });
+        if (!student) {
+            return res.status(400).send('Student does not exist.');
+        }
+        return res.status(200).json({ student });
+    } catch (error) {
+        console.error('Error occurred:', error);
+        return res.status(500).send('An error occurred.');
+    }
+  }
+)
+
+/**
+ * @api {get} /api/teachers/:teacherId Get teacher information (Protected by JWT)
  */
 app.get('/api/teachers/:teacherId',
   passport.authenticate('jwt', { session: false }), async (req, res) => {
@@ -568,7 +596,7 @@ async function includeFixtures() {
                 email: "john.doe@example.com"
             }
         });
-        const student = await database.prisma.student.create({
+        var student = await database.prisma.student.create({
             data: {
                 first_name: "Jane",
                 last_name: "Doe",
@@ -583,40 +611,56 @@ async function includeFixtures() {
                 role: UserRole.TEACHER
             }
         });
+        var course = await database.prisma.course.create({
+            data: {
+                course_code: "CS 471",
+                course_name: "Capstone Project",
+                teacher_id: teacher.id,
+                Assignments: {
+                    create: [
+                        {
+                            title: "Assignment 1",
+                            description: "Week 1",
+                            due_date: new Date('2023-11-01T00:00:00'),
+                        },
+                        {
+                            title: "Assignment 2",
+                            description: "Week 2",
+                            due_date: new Date('2023-11-15T00:00:00'),
+                        }
+                    ]
+                },
+                Enrollments: {
+                    create: []
+                }
+            },
+            include: { Assignments: true }
+        });
         const user2 = await database.prisma.user.create({
             data: {
                 email: student.email,
                 password: await utils.hash("password"),
                 student_id: student.id,
-                role: UserRole.STUDENT
+                role: UserRole.STUDENT,
             }
+        });
+        const enrollment = await database.prisma.enrollment.create({
+            data: {
+                course_id: course.id,
+                student_id: student.id,
+            }
+        });
+        student = await database.prisma.student.update({
+            where: { id: student.id },
+            include: { Enrollments: true },
+            data: { Enrollments: { connect: { id: enrollment.id } } }
+        });
+        course = await database.prisma.course.update({
+            where: { id: course.id },
+            include: { Enrollments: true },
+            data: { Enrollments: { connect: { id: enrollment.id } } }
         });
 
-        const course = await database.prisma.course.create({
-        data: {
-            course_code: "CS 471",
-            course_name: "Capstone Project",
-            teacher_id: teacher.id,
-            Assignments: {
-                create: [
-                    {
-                        title: "Assignment 1",
-                        description: "Week 1",
-                        due_date: new Date('2023-11-01T00:00:00'),
-                    },
-                    {
-                        title: "Assignment 2",
-                        description: "Week 2",
-                        due_date: new Date('2023-11-15T00:00:00'),
-                    }
-                ]
-            },
-            Enrollments: {
-                create: []
-            }
-        },
-        include: { Assignments: true }
-        });
 
         console.log("Created course: ", course);
     } catch (error) {
