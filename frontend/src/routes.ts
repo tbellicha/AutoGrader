@@ -6,8 +6,6 @@ import CourseDetails from './components/CourseDetails';
 import Login from './views/Login';
 import Signup from './views/Signup';
 import Upload from './views/Upload';
-import StudentDashboard from './views/StudentDashboard';
-import TeacherDashboard from './components/TeacherDashboard';
 
 const routes: Route[] = [
     {
