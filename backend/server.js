@@ -196,13 +196,13 @@ app.get(
 )
 
 /**
- * @api {post} /api/course/create Create a new course (Protected by JWT)
+ * @api {post} /api/course Create a new course (Protected by JWT)
  * req.body.course_code: String
  * req.body.course_name: String
  * req.body.teacher_id: String
  */
 app.post(
-  '/api/course/create',
+  '/api/course',
   passport.authenticate('jwt', { session: false }), async (req, res) => {
     try {
         if (!req.user) {
@@ -271,13 +271,13 @@ app.get(
 )
 
 /**
- * @api {post} /api/course/:course_id/assignment/create Create a new Assignment to a Course (Protected by JWT)
+ * @api {post} /api/course/:course_id/assignment Create a new Assignment to a Course (Protected by JWT)
  * req.body.title: String
  * req.body.description: String
  * req.body.due_date: DateTime
  */
 app.post(
-  '/api/course/:course_id/assignment/create',
+  '/api/course/:course_id/assignment',
   passport.authenticate('jwt', { session: false }), async (req, res) => {
     try {
         if (!req.user) {
