@@ -20,7 +20,7 @@ const session = require('express-session')
 const jwt = require('jwt-simple');
 const jwtoken = require('jsonwebtoken');
 const { UserRole } = require('@prisma/client');
-const { s3Uploadv3 } = require('./s3Service');
+const { s3UploadHW, s3UploadTC } = require('./s3Service');
 
 passport.serializeUser((user, done) => {
     done(null, user.id)
@@ -46,15 +46,47 @@ const storage = multer.memoryStorage()
 const upload = multer({ storage: storage })
 
 //For the moment we include the test script already, we only require the homework submission for the demo
-app.post("/api/upload/testcase", upload.single('file'), (req, res) => {})
-
-app.post("/api/upload/file", upload.single('file'), async (req, res) => {
+app.post(
+    "/api/upload/:assignment_id/testcase", 
+    passport.authenticate('jwt', {session: false}), upload.single('file'), async (req, res) => {
     try {
-        const uploadResult = await s3Uploadv3(file);
-        console.log(uploadResult);
-        res.json({status: "success", uploadResult})
-    } catch (e) {
-        console.log(e)
+        if(!req.file){
+            return res.status(400).send("No file included")
+        }
+        if(!req.user){
+            return res.status(401).send("Invalid token")
+        }
+        if(req.user.role !== UserRole.TEACHER){
+            return res.status(401).send("Not enough permissions")
+        }
+        const uploadResult = await s3UploadTC(req.file, req.params.assignment_id)
+        console.log(uploadResult)
+        res.status(200).send("Testcase upload successful")
+    } catch (error) {
+        console.log("Error occured: ", error)
+        return res.status(500).send("An error has occured.")
+    }
+}) 
+
+app.post(
+    "/api/upload/:assignment_id/assignment", 
+    passport.authenticate('jwt', {session: false}), upload.array('file'), async (req, res) => {
+    try {
+        if(!req.files){
+            return res.status(400).send("No files were included")
+        }
+        if(!req.user){
+            return res.status(401).send("Invalid token")
+        }
+        if(req.user.role !== UserRole.STUDENT){
+            return res.status(401).send("Not enough permissions")
+        } 
+        const uploadResult = await s3UploadHW(req.files, req.params.assignment_id)
+        console.log(uploadResult)
+        res.status(200).send("Homework upload successful")
+    } catch (error) {
+        console.log("Error occured: ", error)
+        return res.status(500).send("An error has occured.")
     }
 })
 
