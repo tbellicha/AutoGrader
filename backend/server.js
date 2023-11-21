@@ -196,13 +196,13 @@ app.get(
 )
 
 /**
- * @api {post} /api/course/create Create a new course (Protected by JWT)
+ * @api {post} /api/course Create a new course (Protected by JWT)
  * req.body.course_code: String
  * req.body.course_name: String
  * req.body.teacher_id: String
  */
 app.post(
-  '/api/course/create',
+  '/api/course',
   passport.authenticate('jwt', { session: false }), async (req, res) => {
     try {
         if (!req.user) {
@@ -249,13 +249,35 @@ app.post(
 )
 
 /**
- * @api {post} /api/course/:course_id/assignment/create Create a new Assignment to a Course (Protected by JWT)
+ * @api {get} /api/course/:courseId Get course information (Protected by JWT)
+ */
+app.get(
+  '/api/course/:courseId',
+  passport.authenticate('jwt', { session: false }), async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).send('Invalid token');
+        }
+        const course = await database.prisma.course.findUnique({
+            where: { id: req.params.courseId },
+            include: { Assignments: true, Enrollments: true }
+        })
+        return res.status(200).json({ course });
+    } catch (error) {
+        console.error('Error occurred:', error);
+        return res.status(500).send('An error occurred.');
+    }
+  }
+)
+
+/**
+ * @api {post} /api/course/:course_id/assignment Create a new Assignment to a Course (Protected by JWT)
  * req.body.title: String
  * req.body.description: String
  * req.body.due_date: DateTime
  */
 app.post(
-  '/api/course/:course_id/assignment/create',
+  '/api/course/:course_id/assignment',
   passport.authenticate('jwt', { session: false }), async (req, res) => {
     try {
         if (!req.user) {
@@ -297,6 +319,66 @@ app.post(
         })
         console.log("Updated Course: ", updatedCourse)
         return res.status(200).json({ course });
+    } catch (error) {
+        console.error('Error occurred:', error);
+        return res.status(500).send('An error occurred.');
+    }
+  }
+)
+
+/**
+ * @api {post} /api/assignment/:assignment_id/submission Create a new Submission to an Assignment (Protected by JWT)
+ */
+app.post(
+  '/api/assignment/:assignment_id/submission',
+  passport.authenticate('jwt', { session: false }), async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).send('Invalid token');
+        }
+
+        if (req.user.role !== UserRole.STUDENT) {
+            return res.status(401).send('Not enough permissions.');
+        }
+        const assignment = await database.prisma.assignment.findUnique({
+            where: { id: req.params.assignment_id },
+        })
+        if (!assignment) {
+            return res.status(400).send('Assignment does not exist.');
+        }
+        const student = await database.prisma.student.findUnique({
+            where: { id: req.user.student_id },
+        })
+        if (!student) {
+            return res.status(400).send('Student does not exist.');
+        }
+        const checkStudentEnrollment = await database.prisma.enrollment.findFirst({
+            where: { course_id: assignment.course_id, student_id: student.id },
+        })
+        if (!checkStudentEnrollment) {
+            return res.status(400).send('Student is not enrolled in the course.');
+        }
+        const submission = await database.prisma.submission.create({
+            data: {
+                submission_date: new Date(),
+                score: 0,
+                comment: "",
+                student_id: req.user.student_id,
+                assignment_id: assignment.id,
+            }
+        })
+        const updatedAssignment = await database.prisma.assignment.update({
+            where: { id: assignment.id },
+            include: { Submissions: true },
+            data: { Submissions: { connect: { id: submission.id } } }
+        })
+        const updatedStudent = await database.prisma.student.update({
+            where: { id: req.user.student_id },
+            include: { Submissions: true },
+            data: { Submissions: { connect: { id: submission.id } } }
+        })
+        console.log("Updated Assignment: ", updatedAssignment)
+        return res.status(200).json({ assignment });
     } catch (error) {
         console.error('Error occurred:', error);
         return res.status(500).send('An error occurred.');
@@ -532,7 +614,35 @@ app.get(
 )
 
 /**
- * @api {get} /api/teachers/:teacherId List all courses of a teacher (Protected by JWT)
+ * @api {get} /api/students/:studentId Get student information (Protected by JWT)
+ */
+app.get(
+  '/api/students/:studentId',
+  passport.authenticate('jwt', { session: false }), async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).send('Invalid token');
+        }
+        if (req.user.role !== UserRole.ADMIN && req.params.studentId !== req.user.student_id) {
+            return res.status(401).send('Not enough permissions.');
+        }
+        const student = await database.prisma.student.findUnique({
+            where : { id: req.params.studentId },
+            include: { Enrollments: true },
+        });
+        if (!student) {
+            return res.status(400).send('Student does not exist.');
+        }
+        return res.status(200).json({ student });
+    } catch (error) {
+        console.error('Error occurred:', error);
+        return res.status(500).send('An error occurred.');
+    }
+  }
+)
+
+/**
+ * @api {get} /api/teachers/:teacherId Get teacher information (Protected by JWT)
  */
 app.get('/api/teachers/:teacherId',
   passport.authenticate('jwt', { session: false }), async (req, res) => {
@@ -568,7 +678,7 @@ async function includeFixtures() {
                 email: "john.doe@example.com"
             }
         });
-        const student = await database.prisma.student.create({
+        var student = await database.prisma.student.create({
             data: {
                 first_name: "Jane",
                 last_name: "Doe",
@@ -583,40 +693,56 @@ async function includeFixtures() {
                 role: UserRole.TEACHER
             }
         });
+        var course = await database.prisma.course.create({
+            data: {
+                course_code: "CS 471",
+                course_name: "Capstone Project",
+                teacher_id: teacher.id,
+                Assignments: {
+                    create: [
+                        {
+                            title: "Assignment 1",
+                            description: "Week 1",
+                            due_date: new Date('2023-11-01T00:00:00'),
+                        },
+                        {
+                            title: "Assignment 2",
+                            description: "Week 2",
+                            due_date: new Date('2023-11-15T00:00:00'),
+                        }
+                    ]
+                },
+                Enrollments: {
+                    create: []
+                }
+            },
+            include: { Assignments: true }
+        });
         const user2 = await database.prisma.user.create({
             data: {
                 email: student.email,
                 password: await utils.hash("password"),
                 student_id: student.id,
-                role: UserRole.STUDENT
+                role: UserRole.STUDENT,
             }
+        });
+        const enrollment = await database.prisma.enrollment.create({
+            data: {
+                course_id: course.id,
+                student_id: student.id,
+            }
+        });
+        student = await database.prisma.student.update({
+            where: { id: student.id },
+            include: { Enrollments: true },
+            data: { Enrollments: { connect: { id: enrollment.id } } }
+        });
+        course = await database.prisma.course.update({
+            where: { id: course.id },
+            include: { Enrollments: true },
+            data: { Enrollments: { connect: { id: enrollment.id } } }
         });
 
-        const course = await database.prisma.course.create({
-        data: {
-            course_code: "CS 471",
-            course_name: "Capstone Project",
-            teacher_id: teacher.id,
-            Assignments: {
-                create: [
-                    {
-                        title: "Assignment 1",
-                        description: "Week 1",
-                        due_date: new Date('2023-11-01T00:00:00'),
-                    },
-                    {
-                        title: "Assignment 2",
-                        description: "Week 2",
-                        due_date: new Date('2023-11-15T00:00:00'),
-                    }
-                ]
-            },
-            Enrollments: {
-                create: []
-            }
-        },
-        include: { Assignments: true }
-        });
 
         console.log("Created course: ", course);
     } catch (error) {
@@ -630,5 +756,5 @@ const port = process.env.PORT || 8080;
 app.listen(port, () => {
     console.log(`App listening on port ${port}`);
     console.log(path.join(__dirname, "server.js"));
-    // includeFixtures()
+    includeFixtures()
 });
