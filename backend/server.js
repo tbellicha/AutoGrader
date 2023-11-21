@@ -327,6 +327,66 @@ app.post(
 )
 
 /**
+ * @api {post} /api/assignment/:assignment_id/submission Create a new Submission to an Assignment (Protected by JWT)
+ */
+app.post(
+  '/api/assignment/:assignment_id/submission',
+  passport.authenticate('jwt', { session: false }), async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).send('Invalid token');
+        }
+
+        if (req.user.role !== UserRole.STUDENT) {
+            return res.status(401).send('Not enough permissions.');
+        }
+        const assignment = await database.prisma.assignment.findUnique({
+            where: { id: req.params.assignment_id },
+        })
+        if (!assignment) {
+            return res.status(400).send('Assignment does not exist.');
+        }
+        const student = await database.prisma.student.findUnique({
+            where: { id: req.user.student_id },
+        })
+        if (!student) {
+            return res.status(400).send('Student does not exist.');
+        }
+        const checkStudentEnrollment = await database.prisma.enrollment.findFirst({
+            where: { course_id: assignment.course_id, student_id: student.id },
+        })
+        if (!checkStudentEnrollment) {
+            return res.status(400).send('Student is not enrolled in the course.');
+        }
+        const submission = await database.prisma.submission.create({
+            data: {
+                submission_date: new Date(),
+                score: 0,
+                comment: "",
+                student_id: req.user.student_id,
+                assignment_id: assignment.id,
+            }
+        })
+        const updatedAssignment = await database.prisma.assignment.update({
+            where: { id: assignment.id },
+            include: { Submissions: true },
+            data: { Submissions: { connect: { id: submission.id } } }
+        })
+        const updatedStudent = await database.prisma.student.update({
+            where: { id: req.user.student_id },
+            include: { Submissions: true },
+            data: { Submissions: { connect: { id: submission.id } } }
+        })
+        console.log("Updated Assignment: ", updatedAssignment)
+        return res.status(200).json({ assignment });
+    } catch (error) {
+        console.error('Error occurred:', error);
+        return res.status(500).send('An error occurred.');
+    }
+  }
+)
+
+/**
  * @api {post} /api/course/:course_id/enroll Enroll to a course (Protected by JWT)
  * req.body.title: String
  * req.body.description: String
