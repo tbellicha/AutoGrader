@@ -23,7 +23,7 @@ const AssignmentCreation: React.FC<AssignmentCreationProps> = ({
   const createAssignmentHandler = async () => {
     try {
       if (courseId !== null && token) {
-        const response = await fetch(`/api/course/${courseId}/assignment/create`, {
+        const response = await fetch(`/api/course/${courseId}/assignment`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

@@ -196,13 +196,13 @@ app.get(
 )
 
 /**
- * @api {post} /api/course/create Create a new course (Protected by JWT)
+ * @api {post} /api/course Create a new course (Protected by JWT)
  * req.body.course_code: String
  * req.body.course_name: String
  * req.body.teacher_id: String
  */
 app.post(
-  '/api/course/create',
+  '/api/course',
   passport.authenticate('jwt', { session: false }), async (req, res) => {
     try {
         if (!req.user) {
@@ -271,13 +271,13 @@ app.get(
 )
 
 /**
- * @api {post} /api/course/:course_id/assignment/create Create a new Assignment to a Course (Protected by JWT)
+ * @api {post} /api/course/:course_id/assignment Create a new Assignment to a Course (Protected by JWT)
  * req.body.title: String
  * req.body.description: String
  * req.body.due_date: DateTime
  */
 app.post(
-  '/api/course/:course_id/assignment/create',
+  '/api/course/:course_id/assignment',
   passport.authenticate('jwt', { session: false }), async (req, res) => {
     try {
         if (!req.user) {
@@ -319,6 +319,66 @@ app.post(
         })
         console.log("Updated Course: ", updatedCourse)
         return res.status(200).json({ course });
+    } catch (error) {
+        console.error('Error occurred:', error);
+        return res.status(500).send('An error occurred.');
+    }
+  }
+)
+
+/**
+ * @api {post} /api/assignment/:assignment_id/submission Create a new Submission to an Assignment (Protected by JWT)
+ */
+app.post(
+  '/api/assignment/:assignment_id/submission',
+  passport.authenticate('jwt', { session: false }), async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).send('Invalid token');
+        }
+
+        if (req.user.role !== UserRole.STUDENT) {
+            return res.status(401).send('Not enough permissions.');
+        }
+        const assignment = await database.prisma.assignment.findUnique({
+            where: { id: req.params.assignment_id },
+        })
+        if (!assignment) {
+            return res.status(400).send('Assignment does not exist.');
+        }
+        const student = await database.prisma.student.findUnique({
+            where: { id: req.user.student_id },
+        })
+        if (!student) {
+            return res.status(400).send('Student does not exist.');
+        }
+        const checkStudentEnrollment = await database.prisma.enrollment.findFirst({
+            where: { course_id: assignment.course_id, student_id: student.id },
+        })
+        if (!checkStudentEnrollment) {
+            return res.status(400).send('Student is not enrolled in the course.');
+        }
+        const submission = await database.prisma.submission.create({
+            data: {
+                submission_date: new Date(),
+                score: 0,
+                comment: "",
+                student_id: req.user.student_id,
+                assignment_id: assignment.id,
+            }
+        })
+        const updatedAssignment = await database.prisma.assignment.update({
+            where: { id: assignment.id },
+            include: { Submissions: true },
+            data: { Submissions: { connect: { id: submission.id } } }
+        })
+        const updatedStudent = await database.prisma.student.update({
+            where: { id: req.user.student_id },
+            include: { Submissions: true },
+            data: { Submissions: { connect: { id: submission.id } } }
+        })
+        console.log("Updated Assignment: ", updatedAssignment)
+        return res.status(200).json({ assignment });
     } catch (error) {
         console.error('Error occurred:', error);
         return res.status(500).send('An error occurred.');

@@ -15,7 +15,7 @@ const CourseCreation: React.FC = () => {
     try {
       setLoading(true);
 
-      const response = await fetch('/api/course/create', {
+      const response = await fetch('/api/course', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
