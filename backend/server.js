@@ -43,14 +43,16 @@ app.use(passport.session())
 //Setting storage settings
 const storage = multer.memoryStorage()
 
-const upload = multer({ storage: storage })
+const upload = multer({ storage: storage }) 
 
-//For the moment we include the test script already, we only require the homework submission for the demo
+/**
+ * @api {post} /api/upload/:assignment_id, Upload test case to s3 bucket specified by assignment_id
+ */
 app.post(
     "/api/upload/:assignment_id/testcase", 
-    passport.authenticate('jwt', {session: false}), upload.single('file'), async (req, res) => {
+    passport.authenticate('jwt', {session: false}), upload.array('file'), async (req, res) => {
     try {
-        if(!req.file){
+        if(!req.files){
             return res.status(400).send("No file included")
         }
         if(!req.user){
@@ -59,7 +61,7 @@ app.post(
         if(req.user.role !== UserRole.TEACHER){
             return res.status(401).send("Not enough permissions")
         }
-        const uploadResult = await s3UploadTC(req.file, req.params.assignment_id)
+        const uploadResult = await s3UploadTC(req.files, req.params.assignment_id)
         console.log(uploadResult)
         res.status(200).send("Testcase upload successful")
     } catch (error) {
@@ -68,6 +70,9 @@ app.post(
     }
 }) 
 
+/**
+ * @api {post} /api/upload/:assignment_id, Upload homework files to s3 bucket specified by assignment_id
+ */
 app.post(
     "/api/upload/:assignment_id/assignment", 
     passport.authenticate('jwt', {session: false}), upload.array('file'), async (req, res) => {
