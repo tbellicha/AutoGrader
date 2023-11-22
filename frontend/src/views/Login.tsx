@@ -3,14 +3,13 @@ import { useNavigate } from "react-router-dom";
 
 
 import { useAuth } from "../components/AuthContext";
+import { useUser } from "../components/UserContext";
+
 import LoginForm from "../components/LoginForm";
 import LoginService from "../services/LoginService";
 
 import Alert from "react-bootstrap/Alert";
 
-//const DASHBOARD_PATH = "/dashboard";
-const TEACHER_DASHBOARD_PATH = "/TeacherDashboard";
-const STUDENT_DASHBOARD_PATH = "/StudentDashboard"
 const SIGNUP_PATH = "/signup";
 
 type statusCode = number;
@@ -42,8 +41,11 @@ const Login: React.FC<any> = () => {
     // useState hook to store error message
     const [error, setError] = useState("");
 
-    // useAuth hook to store user attributes
+    // useAuth hook to store auth token
     const { setAuthData } = useAuth();
+
+    // useUser hook to store user attributes
+    const { login } = useUser();
 
     // useNavigate hook to redirect to upload portal
     const navigate = useNavigate();
@@ -51,7 +53,8 @@ const Login: React.FC<any> = () => {
     const handleLoginResponse = async (email: string, password: string) => {
         //console.log("Login requested");
         //console.log(`Email: ${email}, Password: ${password}`);
-        setAuthData(null, null, null);
+        //setAuthData(null, null, null);
+        //logout();
         setError("");
 
         const loginPromise = LoginService.login(email, password);
@@ -73,15 +76,15 @@ const Login: React.FC<any> = () => {
             const studentId = data.user?.student_id ?? null;
             const teacherId = data.user?.teacher_id ?? null;
 
+            const user = data.user ?? null;
+
             setAuthData(data.token, studentId, teacherId);
 
-            if (studentId) {
-                navigate(STUDENT_DASHBOARD_PATH);
-            } else if (teacherId) {
-                navigate(TEACHER_DASHBOARD_PATH);
-            } else {
-                setError(`Login failed - no user id`);
-                return;
+            //console.log(`Pre-event - User: ${JSON.stringify(user)}`);
+
+            if(user !== null && user !== undefined) {
+                //console.log(`Post-event User: ${JSON.stringify(user)}`);
+                login(user);
             }
         }).catch((error) => {
             console.error(`${error}`);
