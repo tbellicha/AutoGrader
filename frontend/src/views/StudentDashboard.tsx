@@ -5,7 +5,6 @@ import { Container, Form, Table } from 'react-bootstrap';
 import StudentNavbar from '../components/StudentNavbar';
 import { useAuth } from '../components/AuthContext';
 import StudentInfo from '../types/StudentInfo';
-import { Enrollment } from '../types/TeacherDashboard';
 
 const BASE_URL = 'http://localhost:8080';
 const STUDENT_ENDPOINT_PLACEHOLDER = '/api/students/:studentId';
@@ -53,9 +52,11 @@ const StudentDashboard: React.FC<any> = () => {
                     <Form.Label>Select Course</Form.Label>
                     <Form.Control as="select">
                         {
-                            studentInfo?.Enrollments.map((enrollment: Enrollment) => {
-                                return <option value={enrollment.id}>{enrollment.course_id}</option>;
-                            })
+                            studentInfo?.Enrollments.map((enrollment, index) => (
+                                <option key={index} value={enrollment.course_id}>
+                                    {enrollment.course_id}
+                                </option>
+                            ))
                         }
                     </Form.Control>
                 </Form.Group>

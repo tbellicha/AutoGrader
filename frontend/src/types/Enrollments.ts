@@ -14,12 +14,12 @@ type Enrollment = {
     /**
      * The ID of the student.
      */
-    studentId: string;
+    student_id: string;
 
     /**
      * The ID of the course.
      */
-    courseId: string;
+    course_id: string;
 };
 
 /**
