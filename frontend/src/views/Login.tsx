@@ -1,50 +1,40 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+
+import { useAuth } from "../components/AuthContext";
 import LoginForm from "../components/LoginForm";
 import LoginService from "../services/LoginService";
 
 import Alert from "react-bootstrap/Alert";
 
-const DASHBOARD_PATH = "/dashboard";
+//const DASHBOARD_PATH = "/dashboard";
+const TEACHER_DASHBOARD_PATH = "/TeacherDashboard";
+const STUDENT_DASHBOARD_PATH = "/StudentDashboard"
 const SIGNUP_PATH = "/signup";
 
-/**
- * Represents the status code of a HTTP response.
- * It can be a number or undefined.
- */
-type StatusCode = number | undefined;
+type statusCode = number;
 
-/**
- * Represents a token that can be either a string or undefined.
- */
-type Token = string | undefined;
+type message = string;
 
-/**
- * Represents a message that can be either a string or undefined.
- */
-type Message = string | undefined;
+type token = string;
 
-/**
- * Represents the data returned from a login request.
- * @property {Token} [token] - The authentication token.
- * @property {object} [user] - The user object.
- * @property {string} [message] - A message related to the login request.
- * @property {StatusCode} [statusCode] - The status code of the login request.
- */
-type LoginData = {
-    token?: Token,
-    user?: object,
-    message?: Message,
-    statusCode?: StatusCode,
+type User = {
+    id: string;
+    role: string;
+    email: string;
+    password: string;
+    student_id?: string;
+    teacher_id?: string;
 };
 
-/**
- * Response object returned by the login API endpoint.
- */
 type LoginResponse = {
-    data: LoginData,
-    status: number,
+    data: {
+        user?: User,
+        token?: token,
+    },
+    status: statusCode,
+    message?: message
 };
 
 const Login: React.FC<any> = () => {
@@ -52,53 +42,51 @@ const Login: React.FC<any> = () => {
     // useState hook to store error message
     const [error, setError] = useState("");
 
+    // useAuth hook to store user attributes
+    const { setAuthData } = useAuth();
+
     // useNavigate hook to redirect to upload portal
     const navigate = useNavigate();
 
-    const handleLoginResponse = (email: string, password: string) => {
-        console.log("Login requested");
-        console.log(`Email: ${email}, Password: ${password}`);
+    const handleLoginResponse = async (email: string, password: string) => {
+        //console.log("Login requested");
+        //console.log(`Email: ${email}, Password: ${password}`);
+        setAuthData(null, null, null);
+        setError("");
 
         const loginPromise = LoginService.login(email, password);
 
-
-
         loginPromise.then((response: LoginResponse) => {
             const data = response.data;
+            const status: statusCode = response.status;
 
-            // enumerate the fields in the response
-            for (const [key, value] of Object.entries(data)) {
-                console.log(`${key}: ${value}`);
-            }
-
-            // response changes base on whether the request was successful or not
-            // if unsuccessful, response.data.statusCode will be set
-            // if successful, response.data.statusCode will be undefined
-            const statusCode = data.statusCode;
-
-            // if statusCode is undefined, then the login was successful
-            // otherwise, the login was unsuccessful
-            if (statusCode !== undefined) {
-                setError(`Login failed: ${data.message}`);
+            if (status >= 400) {
+                setError(`Login failed - ${response.message}`);
                 return;
             }
 
-            // data will have 
-            // - token: jwt token for the user to authenticate
-            // - user: the user object
-            const token = data.token;
-            console.log(`Token: ${token}`);
-
-            if (token === undefined) {
-                setError(`Login failed: ${data.message}`);
+            if (!data.token) {
+                setError(`Login failed - no token`);
                 return;
             }
 
-            sessionStorage.setItem("token", token);
-            navigate(DASHBOARD_PATH);
+            const studentId = data.user?.student_id ?? null;
+            const teacherId = data.user?.teacher_id ?? null;
+
+            setAuthData(data.token, studentId, teacherId);
+
+            if (studentId) {
+                navigate(STUDENT_DASHBOARD_PATH);
+            } else if (teacherId) {
+                navigate(TEACHER_DASHBOARD_PATH);
+            } else {
+                setError(`Login failed - no user id`);
+                return;
+            }
         }).catch((error) => {
             console.error(`${error}`);
-            setError(`Login failed: ${error}`);
+            setError(`Login failed because ${error}`);
+            return;
         });
     };
 

@@ -5,17 +5,13 @@ import TeacherDashboard from './components/TeacherDashboard';
 import CourseDetails from './components/CourseDetails';
 import Login from './views/Login';
 import Signup from './views/Signup';
-import Upload from './views/Upload';
+import StudentDashboard from './views/StudentDashboard';
 
 const routes: Route[] = [
     {
         path: '/',
         component: Login,
         exact: true
-    },
-    {
-        path: '/dashboard',
-        component: Upload,
     },
     {
         path: '/signup',
@@ -40,6 +36,10 @@ const routes: Route[] = [
     {
         path: '/course/:id',
         component: CourseDetails,
+    },
+    {
+        path: '/StudentDashboard',
+        component: StudentDashboard,
     },
 ];
 
