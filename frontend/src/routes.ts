@@ -6,6 +6,7 @@ import CourseDetails from './components/CourseDetails';
 import Login from './views/Login';
 import Signup from './views/Signup';
 import StudentDashboard from './views/StudentDashboard';
+import StudentAssignments from './views/StudentAssignments';
 
 const TEACHER = "TEACHER";
 const STUDENT = "STUDENT";
@@ -56,6 +57,12 @@ const routes: Route[] = [
         protected: true,
         role: STUDENT,
     },
+    {
+        path: '/StudentAssignments',
+        component: StudentAssignments,
+        protected: true,
+        role: STUDENT,
+    }
 ];
 
 export default routes;

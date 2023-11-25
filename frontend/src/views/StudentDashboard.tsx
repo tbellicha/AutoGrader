@@ -1,6 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { Container } from 'react-bootstrap';
-
 import ClassTable from '../components/ClassTable';
 import StudentNavbar from '../components/StudentNavbar';
 import { useAuth } from '../components/AuthContext';
@@ -14,6 +12,7 @@ const StudentDashboard: React.FC<any> = () => {
 
     const [loading, setLoading] = useState<boolean>(true);
     const [studentInfo, setStudentInfo] = useState<StudentInfo>();
+    const [courseIds, setCourseIds] = useState<string[]>([]);
     const [courseCodes, setCourseCodes] = useState<string[]>([]);
     const [courseNames, setCourseNames] = useState<string[]>([]);
 
@@ -40,7 +39,7 @@ const StudentDashboard: React.FC<any> = () => {
             .then((data: unknown) => {
                 const courseIds: string[] = (data as string[]);
 
-                console.log(courseIds);
+                setCourseIds(courseIds);
 
                 const coursePromises: Promise<unknown>[] = courseIds.map((courseId) => getCourseInfo(courseId, authToken));
                 return Promise.all(coursePromises);
@@ -58,8 +57,6 @@ const StudentDashboard: React.FC<any> = () => {
                 setCourseCodes(courseCodes);
                 setCourseNames(courseNames);
 
-                zip(courseCodes, courseNames).forEach((course) => console.log(course));
-
                 setLoading(false);
             })
             .catch((error) => console.error(error));
@@ -72,7 +69,7 @@ const StudentDashboard: React.FC<any> = () => {
             {/*  Course Menu */}
             {
                 loading ? (<p className="mt-3">Loading...</p>) : (
-                    <ClassTable classTuple={zip(courseCodes, courseNames)} />
+                    <ClassTable classTuple={zip(courseCodes, courseNames)} courseIds={courseIds}/>
                 )
             }
         </>
