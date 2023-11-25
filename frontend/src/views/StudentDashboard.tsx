@@ -1,105 +1,80 @@
-import axios from 'axios';
 import React, { useEffect, useState } from 'react';
-import { Container, Form, Table } from 'react-bootstrap';
+import { Container } from 'react-bootstrap';
 
+import ClassTable from '../components/ClassTable';
 import StudentNavbar from '../components/StudentNavbar';
 import { useAuth } from '../components/AuthContext';
 import StudentInfo from '../types/StudentInfo';
-
-const BASE_URL = 'http://localhost:8080';
-const STUDENT_ENDPOINT_PLACEHOLDER = '/api/students/:studentId';
+import { getCourseInfo, getStudentInfo } from '../services/StudentDashboardService';
 
 const StudentDashboard: React.FC<any> = () => {
     const auth = useAuth();
     const studentId = auth.studentId ?? "";
+    const authToken = auth.token ?? "";
 
-    const STUDENT_ENDPOINT = STUDENT_ENDPOINT_PLACEHOLDER.replace(':studentId', studentId);
-
+    const [loading, setLoading] = useState<boolean>(true);
     const [studentInfo, setStudentInfo] = useState<StudentInfo>();
+    const [courseCodes, setCourseCodes] = useState<string[]>([]);
+    const [courseNames, setCourseNames] = useState<string[]>([]);
 
-    const getStudentInfo = async (): Promise<any> => {
-        console.log('Fetching student info');
-        console.log(`Student Endpoint: ${STUDENT_ENDPOINT}`);
-
-        const response = await axios.get(STUDENT_ENDPOINT, {
-            baseURL: BASE_URL,
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${auth.token}`
-            }
-        });
-
-        return Promise.resolve(response.data);
+    const zip = <T, U>(arr1: T[], arr2: U[]): [number, T, U][] => {
+        const length = Math.min(arr1.length, arr2.length);
+        return Array.from({ length }, (_, i) => [i, arr1[i], arr2[i]]);
     };
 
     useEffect(() => {
-        getStudentInfo().then((data: unknown) => {
-            const student: StudentInfo = (data as { student: StudentInfo }).student;
+        setLoading(true);
 
-            //console.log(student);
-            setStudentInfo(student);
-        }).catch((error) => console.error(error));
+        getStudentInfo(studentId, authToken)
+            .then((data: unknown) => {
+                const student: StudentInfo = (data as { student: StudentInfo }).student;
+                setStudentInfo(student);
+                const courseIds: string[] = [];
+
+                student ?? console.log(`Student: ${studentInfo} is null!`);
+
+                student.Enrollments.forEach(enrollment => courseIds.push(enrollment.course_id));
+
+                return Promise.resolve(courseIds);
+            })
+            .then((data: unknown) => {
+                const courseIds: string[] = (data as string[]);
+
+                console.log(courseIds);
+
+                const coursePromises: Promise<unknown>[] = courseIds.map((courseId) => getCourseInfo(courseId, authToken));
+                return Promise.all(coursePromises);
+            })
+            .then((data: unknown[]) => {
+                const courseCodes: string[] = [];
+                const courseNames: string[] = [];
+
+                data.forEach((obj: unknown) => {
+                    const courseInfo = (obj as { course: { course_code: string, course_name: string } })?.course;
+                    courseCodes.push(courseInfo.course_code);
+                    courseNames.push(courseInfo.course_name);
+                });
+
+                setCourseCodes(courseCodes);
+                setCourseNames(courseNames);
+
+                zip(courseCodes, courseNames).forEach((course) => console.log(course));
+
+                setLoading(false);
+            })
+            .catch((error) => console.error(error));
     }, []);
 
     return (
         <>
             {/* Navigation Bar */}
             <StudentNavbar />
-
-            {/*  Courses Menu */}
-            <Container>
-                <Form.Group>
-                    <Form.Label>Select Course</Form.Label>
-                    <Form.Control as="select">
-                        {
-                            studentInfo?.Enrollments.map((enrollment, index) => (
-                                <option key={index} value={enrollment.course_id}>
-                                    {enrollment.course_id}
-                                </option>
-                            ))
-                        }
-                    </Form.Control>
-                </Form.Group>
-            </Container>
-            {/*  Assignments Menu */}
-            <Container>
-                <h2 className='mt-3'>Assignments</h2>
-                {/*  Assignments Table */}
-                <Table>
-                    <thead>
-                        <tr>
-                            <th>Title</th>
-                            <th>Grade</th>
-                            <th>Due Date</th>
-                            <th>Details</th>
-                            <th>Submit</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Assignment 1</td>
-                            <td>100</td>
-                            <td>1/1/2021</td>
-                            <td><a href="/student/assignment">Details</a></td>
-                            <td><a href="/student/submit">Submit</a></td>
-                        </tr>
-                        <tr>
-                            <td>Assignment 2</td>
-                            <td>100</td>
-                            <td>1/1/2021</td>
-                            <td><a href="/student/assignment">Details</a></td>
-                            <td><a href="/student/submit">Submit</a></td>
-                        </tr>
-                        <tr>
-                            <td>Assignment 3</td>
-                            <td>100</td>
-                            <td>1/1/2021</td>
-                            <td><a href="/student/assignment">Details</a></td>
-                            <td><a href="/student/submit">Submit</a></td>
-                        </tr>
-                    </tbody>
-                </Table>
-            </Container>
+            {/*  Course Menu */}
+            {
+                loading ? (<p className="mt-3">Loading...</p>) : (
+                    <ClassTable classTuple={zip(courseCodes, courseNames)} />
+                )
+            }
         </>
     );
 };
