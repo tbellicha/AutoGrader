@@ -1,0 +1,3 @@
+Simple calculator application.
+Upload submission files using the submission upload endpoint.
+Upload testcase using the testcase upload endpoint.

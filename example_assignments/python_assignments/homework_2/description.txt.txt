@@ -1,0 +1,3 @@
+This assignment I took from professor Gutta, its a tree implementation and the testcase checks for max depth.
+Upload submission files using the submission upload endpoint.
+Upload testcase using the testcase upload endpoint.
