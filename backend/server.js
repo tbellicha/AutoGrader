@@ -2,6 +2,7 @@
 
 const express = require('express');
 const bodyParser = require('body-parser');
+const fetch = require('node-fetch');
 const mysql = require('mysql2');
 const multer = require('multer');
 const path = require('path');
@@ -395,10 +396,24 @@ app.post(
         if (!checkStudentEnrollment) {
             return res.status(400).send('Student is not enrolled in the course.');
         }
+
+        //AutoGrader service
+        const body = { path: req.params.assignment_id }
+        const options = {
+            method: "POST",
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body)
+        };
+
+        const response = await fetch(process.env.AG_SERVICE, options);
+        const homeworkData = await response.json(); 
+
         const submission = await database.prisma.submission.create({
             data: {
                 submission_date: new Date(),
-                score: 0,
+                score: homeworkData.studentsTotal,
                 comment: "",
                 student_id: req.user.student_id,
                 assignment_id: assignment.id,
@@ -415,7 +430,7 @@ app.post(
             data: { Submissions: { connect: { id: submission.id } } }
         })
         console.log("Updated Assignment: ", updatedAssignment)
-        return res.status(200).json({ assignment });
+        return res.status(200).json({ assignment, homeworkData });
     } catch (error) {
         console.error('Error occurred:', error);
         return res.status(500).send('An error occurred.');
