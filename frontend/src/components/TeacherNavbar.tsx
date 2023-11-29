@@ -1,8 +1,16 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { useUser } from './UserContext';
 
-const NavBar: React.FC = () => {
+const NavBar: React.FC<any> = () => {
   const location = useLocation();
+
+  const { logout, setUserData } = useUser();
+
+  const handleLogout = () => {
+     setUserData(null);
+     logout();
+  };
 
   const isLinkActive = (path: string) => {
     return location.pathname === path;
@@ -37,6 +45,11 @@ const NavBar: React.FC = () => {
       <span className="navbar-text" style={{ marginLeft: '20px', marginRight: '20px', fontSize: '20px' }}>
         <strong>AutoGrader</strong>
       </span>
+      <div className="ml-auto">
+        <button className="btn btn-outline-light" onClick={() => handleLogout()}>
+          Logout
+        </button>
+      </div>
     </nav>
   );
 };
