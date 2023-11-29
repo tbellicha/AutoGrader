@@ -28,33 +28,38 @@ export type TestDetails = {
 /**
  * Represents the data for a homework assignment.
  * @Type {HomeworkData}
- * @property {string} elapsedTime The elapsed time for the homework assignment.
- * @property {number} homeworkTotal The total number of homework assignments.
- * @property {string} peakMem The peak memory usage for the homework assignment.
- * @property {string} studentPercentage The percentage of students who completed the homework assignment.
- * @property {number} studentsTotal The total number of students.
+ * @property {string} elapsedTime The elapsed time the container executed for.
+ * @property {number} homeworkTotal The total number of points for this assignment.
+ * @property {string} peakMem The peak memory usage during runtime.
+ * @property {string} studentPercentage The score as a percentage.
+ * @property {number} studentsTotal The total number of points earned.
  */
 export type HomeworkData = {
     /**
-     * The elapsed time for the homework assignment.
+     * The elapsed time the container executed for.
      */
     elapsedTime: string;
+
     /**
-     * The total number of homework assignments.
+     * The total number of points for this assignment.
      */
     homeworkTotal: number;
+
     /**
-     * The peak memory usage for the homework assignment.
+     * The peak memory usage during runtime.
      */
     peakMem: string;
+
     /**
-     * The percentage of students who completed the homework assignment.
+     * The students' score as a percentage.
      */
     studentPercentage: string;
+
     /**
-     * The total number of students.
+     * The total number of points earned.
      */
     studentsTotal: number;
+
     /**
      * The details of the tests for the homework assignment.
      */

@@ -8,6 +8,7 @@ import { ServerResponse } from '../types/ServerResponse';
 import { useAuth } from '../components/AuthContext';
 
 import { postAssignment, postSubmission } from '../services/AssignmentSubmissionService';
+import { HomeworkData } from '../types/HomeworkData';
 
 interface AssignmentModalProps {
     show: boolean;
@@ -23,7 +24,7 @@ const AssignmentUploadModal: React.FC<AssignmentModalProps> = (props) => {
     const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
     const [progressInfos, setProgressInfos] = useState<Array<any>>([]);
     const [message, setMessage] = useState<Array<string>>([]);
-    const [serverResponse, setServerResponse] = useState<ServerResponse | null>(null);
+    const [homeworkData, setHomeworkData] = useState<HomeworkData | null>(null);
 
     const dateOptions: Intl.DateTimeFormatOptions = {
         month: '2-digit',
@@ -59,7 +60,6 @@ const AssignmentUploadModal: React.FC<AssignmentModalProps> = (props) => {
                 setProgressInfos([..._progressInfos]);
             }).then((response) => {
                 setMessage((prevMessage) => [...prevMessage, `Uploaded: ${file.name} successfully!`]);
-                setServerResponse(response);
                 console.log(`Response: ${response}`);
             }).catch((err: any) => {
                 _progressInfos[i].percentage = 0;
@@ -81,7 +81,9 @@ const AssignmentUploadModal: React.FC<AssignmentModalProps> = (props) => {
                 return postSubmission(props.assignment.id, authToken);
             })
             .then((data: ServerResponse) => {
-                setServerResponse(data);
+                const homeworkData = data.homeworkData;
+                console.log(`Homework score: ${JSON.stringify(homeworkData)}`);
+                setHomeworkData(data.homeworkData);
             })
             .catch(err => console.log(err));
     };

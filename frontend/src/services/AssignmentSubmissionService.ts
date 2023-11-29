@@ -33,6 +33,8 @@ export const postSubmission = async (assignmentId: string, authToken: string): P
             Authorization: `Bearer ${authToken}`
         }
     });
-    
+
+    console.log(response);
+
     return Promise.resolve(response.data);
 };
