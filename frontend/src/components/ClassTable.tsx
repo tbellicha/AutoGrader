@@ -21,12 +21,13 @@ const ClassTable: React.FC<{ classTuple: ClassTuple[], courseIds: string[] }> = 
     const handleClick = async (courseId: string) => {
         const courseInfo = (await getCourseInfo(courseId, authToken) as { course: { course_code: string, course_name: string, Assignments: any[] } }).course;
         const assignments: Assignments = courseInfo.Assignments;
-        
+        const courseTitle: string = `${courseInfo.course_code} - ${courseInfo.course_name}`;
+
         setAssigments(assignments);
 
         // navigate to the assignments page and pass the assignments state data to the page
         if (assignments.length > 0) {
-            navigate(STUDENT_ASSIGNMENTS_PATH, { state: { assignments: assignments } });
+            navigate(STUDENT_ASSIGNMENTS_PATH, { state: { assignments: assignments, courseTitle: courseTitle } });
         }
     };
 
