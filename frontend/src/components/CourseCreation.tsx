@@ -2,9 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { Form, Button, Container } from 'react-bootstrap';
 import NavBar from './TeacherNavbar';
 import { useAuth } from './AuthContext.tsx';
+import { createCourse } from '../services/TeacherDashboardService';
 
 const CourseCreation: React.FC = () => {
-  const { token, teacherId } = useAuth();
+  //Authentication
+  const auth = useAuth();
+  const teacherId = auth.teacherId ?? "";
+  const authToken = auth.token ?? "";
+
+  //const { token, teacherId } = useAuth();
   const [courseName, setCourseName] = useState('');
   const [courseCode, setCourseCode] = useState('');
   //const [teacherId, setTeacherId] = useState('');
@@ -12,21 +18,54 @@ const CourseCreation: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   const createCourseHandler = async () => {
+    setLoading(true);
+ 
+    createCourse(courseName, courseCode, teacherId, authToken)
+    .then(response => { 
+      if(response.ok){
+        setCourseName('');
+        setCourseCode('');
+        console.log('Course created successfully');
+        setLoading(false);
+      }
+    })
+    .catch(error => {
+      console.error('Error occurred:', error);
+      setErrorMessage('An error occurred.');
+    })
+
+    /*
     try {
       setLoading(true);
-
+ 
       const response = await fetch('/api/course', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${authToken}`,
         },
         body: JSON.stringify({
           course_name: courseName,
           course_code: courseCode,
           teacher_id: teacherId,
         }),
-      });
+      }); 
+
+      createCourse(courseName, courseCode, teacherId, authToken)
+      .then(response => {
+        console.log(response);
+        if(response.ok){
+          setCourseName('');
+          setCourseCode('');
+          console.log('Course created successfully');
+          setLoading(false);
+        }
+      })
+      .catch(error => {
+        console.error('Error occurred:', error);
+        setErrorMessage('An error occurred.');
+      })
+
 
       if (response.ok) {
         setCourseName('');
@@ -43,6 +82,7 @@ const CourseCreation: React.FC = () => {
     } finally {
       setLoading(false);
     }
+    */
   };
 
   return (

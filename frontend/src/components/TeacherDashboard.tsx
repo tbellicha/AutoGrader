@@ -6,10 +6,11 @@ import NavBar from './TeacherNavbar';
 import { getTeacherCourses } from '../services/TeacherDashboardService';
 import { useAuth } from '../components/AuthContext';
 
+
 const TeacherDashboard: React.FC<any> = () => {
   const auth = useAuth();
   const teacherId = auth.teacherId ?? "";
-  const authToken = auth.token ?? "";
+  const authToken = auth.token ?? ""; 
 
   const [loading, setLoading] = useState<boolean>(true);
   const [courses, setCourses] = useState<Course[]>([]);
@@ -18,11 +19,43 @@ const TeacherDashboard: React.FC<any> = () => {
   useEffect(() => {
     setLoading(true);
 
+    getTeacherCourses(teacherId, authToken)
+    .then(data => { 
+      const courses: Course[] = data.teacher.Courses;
+
+      // Update state
+      setCourses(courses);
+      setLoading(false);
+    }) 
+    .catch(error => {
+      console.error('Error occurred:', error);
+      setErrorMessage('An error occurred while fetching data.');
+      setLoading(false);
+    })
+
+    /*
     const fetchTeacherData = async () => {
       try {
         // Fetch courses information
-        const coursesResponse = await getTeacherCourses(teacherId, authToken);
-        const courses: Course[] = coursesResponse.data.courses;
+        //const coursesResponse = await getTeacherCourses(teacherId, authToken);
+        const courseResponse = await getTeacherCourses(teacherId, authToken);
+        const data = courseResponse.json();
+        console.log(courseResponse);
+        console.log(data);
+        console.log(data.data)
+        
+        getTeacherCourses(teacherId, authToken)
+        .then(response => {
+          console.log(response);
+          if(response.ok){
+            return response.json();
+          }
+        })
+        .then(data => {
+          console.log(data);
+        })
+        
+        //const courses: Course[] = coursesResponse.data.course;
 
         // Update state
         setCourses(courses);
@@ -33,8 +66,9 @@ const TeacherDashboard: React.FC<any> = () => {
         setLoading(false);
       }
     };
+    */
 
-    fetchTeacherData();
+    //fetchTeacherData();
   }, [teacherId, authToken]);
 
   return (
