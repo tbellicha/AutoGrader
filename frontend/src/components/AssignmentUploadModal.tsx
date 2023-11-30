@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 
 import { Modal, Button, Form } from 'react-bootstrap';
 
@@ -7,7 +7,7 @@ import { ServerResponse } from '../types/ServerResponse';
 
 import { useAuth } from '../components/AuthContext';
 
-import { postAssignment, postSubmission } from '../services/AssignmentSubmissionService';
+import { uploadAssignment } from '../services/AssignmentSubmissionService';
 import { HomeworkData } from '../types/HomeworkData';
 
 interface AssignmentModalProps {
@@ -20,11 +20,7 @@ const AssignmentUploadModal: React.FC<AssignmentModalProps> = (props) => {
     const auth = useAuth();
     const authToken = auth.token ?? "";
 
-    const progressInfosRef = useRef<any>(null);
     const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
-    const [progressInfos, setProgressInfos] = useState<Array<any>>([]);
-    const [message, setMessage] = useState<Array<string>>([]);
-    const [homeworkData, setHomeworkData] = useState<HomeworkData | null>(null);
 
     const dateOptions: Intl.DateTimeFormatOptions = {
         month: '2-digit',
@@ -40,8 +36,6 @@ const AssignmentUploadModal: React.FC<AssignmentModalProps> = (props) => {
 
     const selectFiles = (event: React.ChangeEvent<HTMLInputElement>) => {
         setSelectedFiles(event.target.files);
-        setProgressInfos([]);
-        setMessage([]);
     };
 
     const upload = async () => {
@@ -51,41 +45,11 @@ const AssignmentUploadModal: React.FC<AssignmentModalProps> = (props) => {
 
         const files = Array.from(selectedFiles);
 
-        let _progressInfos = Array(files.length).fill({ percentage: 0, fileName: "File Name" });
-        progressInfosRef.current = _progressInfos;
-
-        const uploadPromises = files.map((file, i) => {
-            return postAssignment(props.assignment.id, authToken, file, (event: ProgressEvent) => {
-                _progressInfos[i].percentage = Math.round((100 * event.loaded) / event.total);
-                setProgressInfos([..._progressInfos]);
-            }).then((response) => {
-                setMessage((prevMessage) => [...prevMessage, `Uploaded: ${file.name} successfully!`]);
-                console.log(`Response: ${response}`);
-            }).catch((err: any) => {
-                _progressInfos[i].percentage = 0;
-                setProgressInfos([..._progressInfos]);
-
-                let msg = `Failed to upload: ${file.name}!`;
-
-                if (err.response && err.response.data && err.response.data.message) {
-                    msg += ` ${err.response.data.message}`;
-                }
-
-                setMessage((prevMessage) => [...prevMessage, msg]);
-            });
-        });
-
-        Promise.all(uploadPromises)
-            .then(() => {
-                console.log(`All files uploaded successfully!`);
-                return postSubmission(props.assignment.id, authToken);
-            })
-            .then((data: ServerResponse) => {
-                const homeworkData = data.homeworkData;
-                console.log(`Homework score: ${JSON.stringify(homeworkData)}`);
-                setHomeworkData(data.homeworkData);
-            })
-            .catch(err => console.log(err));
+        try {
+            const response: ServerResponse = await uploadAssignment(props.assignment.id, authToken, files);
+        } catch (error) {
+            console.error(`Oh no!: ${error}`);
+        }
     };
 
     return (
