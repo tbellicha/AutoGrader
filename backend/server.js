@@ -72,7 +72,7 @@ app.post(
 }) 
 
 /**
- * @api {post} /api/upload/:assignment_id, Upload homework files to s3 bucket specified by assignment_id
+ * @api {post} /api/upload/:assignment_id/assignment, Upload homework files to s3 bucket specified by assignment_id
  */
 app.post(
     "/api/upload/:assignment_id/assignment", 
@@ -507,9 +507,11 @@ app.get('/api/course/:course_id/students',
         if (!req.user) {
             return res.status(401).send('Invalid token');
         }
+        /*
         if (req.user.role !== UserRole.ADMIN && (req.user.role !== UserRole.TEACHER || req.user.teacher_id !== req.params.teacher_id)) {
             return res.status(401).send('Not enough permissions.');
         }
+        */
         const course = await database.prisma.course.findUnique({
             where: { id: req.params.course_id },
         })

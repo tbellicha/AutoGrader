@@ -5,84 +5,33 @@ import { useAuth } from './AuthContext.tsx';
 import { createCourse } from '../services/TeacherDashboardService';
 
 const CourseCreation: React.FC = () => {
+  const [courseName, setCourseName] = useState('');
+  const [courseCode, setCourseCode] = useState(''); 
+  const [errorMessage, setErrorMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+
   //Authentication
   const auth = useAuth();
   const teacherId = auth.teacherId ?? "";
   const authToken = auth.token ?? "";
 
-  //const { token, teacherId } = useAuth();
-  const [courseName, setCourseName] = useState('');
-  const [courseCode, setCourseCode] = useState('');
-  //const [teacherId, setTeacherId] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
-  const [loading, setLoading] = useState(false);
-
   const createCourseHandler = async () => {
-    setLoading(true);
- 
-    createCourse(courseName, courseCode, teacherId, authToken)
-    .then(response => { 
-      if(response.ok){
+    setLoading(true);  
+    try {
+      const response = await createCourse(courseName, courseCode, teacherId, authToken);
+      if(response.status === 200){
         setCourseName('');
         setCourseCode('');
         console.log('Course created successfully');
         setLoading(false);
       }
-    })
-    .catch(error => {
-      console.error('Error occurred:', error);
-      setErrorMessage('An error occurred.');
-    })
-
-    /*
-    try {
-      setLoading(true);
- 
-      const response = await fetch('/api/course', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`,
-        },
-        body: JSON.stringify({
-          course_name: courseName,
-          course_code: courseCode,
-          teacher_id: teacherId,
-        }),
-      }); 
-
-      createCourse(courseName, courseCode, teacherId, authToken)
-      .then(response => {
-        console.log(response);
-        if(response.ok){
-          setCourseName('');
-          setCourseCode('');
-          console.log('Course created successfully');
-          setLoading(false);
-        }
-      })
-      .catch(error => {
-        console.error('Error occurred:', error);
-        setErrorMessage('An error occurred.');
-      })
-
-
-      if (response.ok) {
-        setCourseName('');
-        setCourseCode('');
-        //setTeacherId('');
-        console.log('Course created successfully');
-      } else {
-        const error = await response.text();
-        setErrorMessage(error);
-      }
     } catch (error) {
       console.error('Error occurred:', error);
       setErrorMessage('An error occurred.');
+      setLoading(false);
     } finally {
       setLoading(false);
-    }
-    */
+    }  
   };
 
   return (

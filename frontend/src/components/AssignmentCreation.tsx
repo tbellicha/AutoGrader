@@ -1,60 +1,71 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Form, Button, Container } from 'react-bootstrap';
-import { Assignment } from '../types/TeacherDashboard';
+import { Course } from '../types/TeacherDashboard';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import NavBar from './TeacherNavbar';
+import { useAuth } from '../components/AuthContext';
+import { getTeacherCourses, createAssignment } from '../services/TeacherDashboardService';
+import NavBar from './TeacherNavbar'; 
 
-interface AssignmentCreationProps {
-  token: string | null;
-  onAssignmentCreated: (assignment: Assignment) => void;
-}
-
-const AssignmentCreation: React.FC<AssignmentCreationProps> = ({
-  token,
-  onAssignmentCreated,
-}) => {
-  const [courseId, setCourseId] = useState<number | null>(null);
+const AssignmentCreation: React.FC = () => {
+  const [courseId, setCourseId] = useState<string | null>('');
+  const [loading, setLoading] = useState(false); 
   const [assignmentTitle, setAssignmentTitle] = useState<string>('');
   const [assignmentDescription, setAssignmentDescription] = useState<string>('');
   const [assignmentDueDate, setAssignmentDueDate] = useState<Date | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [courses, setCourses] = useState<Course[]>([]);
 
-  const createAssignmentHandler = async () => {
-    try {
-      if (courseId !== null && token) {
-        const response = await fetch(`/api/course/${courseId}/assignment`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            title: assignmentTitle,
-            description: assignmentDescription,
-            due_date: assignmentDueDate,
-          }),
-        });
+  //Authentication
+  const auth = useAuth();
+  const teacherId = auth.teacherId ?? "";
+  const authToken = auth.token ?? "";
 
-        if (response.ok) {
-          const result = await response.json();
-          const createdAssignment = result.course.Assignments[0];
-          onAssignmentCreated(createdAssignment);
-          setAssignmentTitle('');
-          setAssignmentDescription('');
-          setAssignmentDueDate(null);
-        } else {
-          const error = await response.text();
-          setErrorMessage(error);
-        }
-      } else {
-        console.error('Invalid course ID or missing token');
-      }
-    } catch (error) {
-      console.error('Error occurred:', error);
-      setErrorMessage('An error occurred.');
+  useEffect(() => {
+    // Fetch assignments for the course
+    const fetchCourses = async () => { 
+      getTeacherCourses(teacherId, authToken)
+      .then(data => { 
+        const coursesData: Course[] = data.teacher.Courses;  
+        setCourses(coursesData);  
+      }) 
+      .catch(error => {
+        console.error('Error occurred:', error);
+        setErrorMessage('An error occurred while fetching data.'); 
+      })
+    };  
+
+    fetchCourses();   
+  }, [authToken]);
+
+  const createAssignmentHandler = async () => { 
+    setLoading(true);
+    const data = {
+      title: assignmentTitle,
+      description: assignmentDescription,
+      due_date: assignmentDueDate,
     }
-  };
+    const validCourseId = courseId || "";
+
+    
+    try {
+      const response = await createAssignment(validCourseId, data, authToken)
+      console.log(response);
+      if(response.status === 200){
+        setAssignmentTitle('');
+        setAssignmentDescription('');
+        setAssignmentDueDate(null);
+      } else {
+        const error = await response.text();
+        setErrorMessage(error);
+      }
+    } catch(error) {
+      console.error("Error occured", error);
+      setErrorMessage("An error occured while creating assignment!");
+    } finally {
+      setLoading(false);
+    }
+  }; 
 
   return (
     <div>
@@ -65,10 +76,24 @@ const AssignmentCreation: React.FC<AssignmentCreationProps> = ({
         <Form.Group>
           <Form.Label>Course ID</Form.Label>
           <Form.Control
-            type="text"
-            value={courseId !== null ? courseId : ''}
-            onChange={(e) => setCourseId(parseInt(e.target.value, 10))}
-          />
+            style={{width: '15%'}}
+            as="select"
+            type="text" 
+            value={courseId || ""}
+            onChange={(e) => { 
+              console.log(e.target.value);
+              setCourseId(e.target.value); 
+            }}
+          >
+            <option value="" disabled>Select a course</option>
+            { 
+              courses.map((course) => { 
+                return (
+                  <option key={course.id} value={course.id}>{course.course_name}</option>
+                )
+              })
+            } 
+          </Form.Control>
         </Form.Group>
         <Form.Group>
           <Form.Label>Title</Form.Label>
@@ -94,7 +119,7 @@ const AssignmentCreation: React.FC<AssignmentCreationProps> = ({
             onChange={(date) => setAssignmentDueDate(date)}
           />
         </Form.Group>
-        <Button variant="primary" onClick={createAssignmentHandler}>
+        <Button variant="primary" onClick={createAssignmentHandler} disabled={loading}>
           Create Assignment
         </Button>
         {errorMessage && <div className="text-danger mt-2">{errorMessage}</div>}

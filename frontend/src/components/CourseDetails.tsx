@@ -1,57 +1,63 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Container } from 'react-bootstrap';
+import { Table, Container, Button, Form } from 'react-bootstrap';
 import { Assignment, Student } from '../types/TeacherDashboard';
+import { useAuth } from '../components/AuthContext';
+import { getAssignments, getStudents, uploadTestCase } from '../services/TeacherDashboardService';
+import { useParams } from 'react-router-dom';
 import NavBar from './TeacherNavbar';
 
-interface CourseDetailsProps {
-  token: string | null;
-  courseId: string;
-}
-
-const CourseDetails: React.FC<CourseDetailsProps> = ({ token, courseId }) => {
+const CourseDetails: React.FC = () => { 
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState(''); 
+  const [loading, setLoading] = useState(false);
+  const [files, setFiles] = useState<File[]>([]); 
 
-  useEffect(() => {
+  //Authentication
+  const auth = useAuth(); 
+  const authToken = auth.token ?? ""; 
+
+  //courseId query parameter
+  const { id } = useParams();
+  const courseId = id || ""; 
+
+  //Converting datetime
+  const dateOptions: Intl.DateTimeFormatOptions = {
+    month: '2-digit',
+    day: '2-digit',
+    year: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  };
+
+  const convertDate = (date: string):string => {
+    return new Date(date).toLocaleDateString('en-US', dateOptions);
+  }
+ 
+
+  useEffect(() => { 
     // Fetch assignments for the course
-    const fetchAssignments = async () => {
+    const fetchAssignments = async () => { 
       try {
-        const response = await fetch(`/api/course/${courseId}/assignments`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setAssignments(data.assignments);
+        const response = await getAssignments(courseId, authToken);
+        if(response.status === 200){ 
+          setAssignments(response.data.course.Assignments); 
         } else {
           console.error('Error fetching assignments data');
           setErrorMessage('Error fetching assignments data');
         }
       } catch (error) {
-        console.error('Error occurred:', error);
+        console.error('Error occured', error);
         setErrorMessage('An error occurred while fetching assignments data.');
-      }
+      } 
     };
 
-    // Fetch students for the course
-    const fetchStudents = async () => {
+    // Fetch students for the course /api/course/:course_id/students
+    const fetchStudents = async () => {   
       try {
-        const response = await fetch(`/api/course/${courseId}/students`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setStudents(data.students);
+        const response = await getStudents(courseId, authToken)
+        if(response.status === 200){
+          setStudents(response.data.students);
         } else {
           console.error('Error fetching students data');
           setErrorMessage('Error fetching students data');
@@ -64,7 +70,30 @@ const CourseDetails: React.FC<CourseDetailsProps> = ({ token, courseId }) => {
 
     fetchAssignments();
     fetchStudents();
-  }, [token, courseId]);
+  }, [authToken, id]);
+
+  //Upload testcase for the assignment
+  const uploadHandler = async (e: any) => {  
+    setLoading(true);
+    console.log(e.target.value);
+    try { 
+      const formData = new FormData();
+      files.forEach(file => formData.append('file', file));  
+      const response = await uploadTestCase(e.target.value, formData, authToken) 
+      if(response.status !== 200){ 
+        setErrorMessage('An error occurred while uploading testcases.');
+      } else {
+        console.log(response);
+      }
+    } catch (error) {
+      console.error('Error', error);
+      setErrorMessage('An error occurred.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const onChange = async (e: any) => { setFiles(Array.from(e.target.files)); }
 
   return (
     <div>
@@ -88,7 +117,13 @@ const CourseDetails: React.FC<CourseDetailsProps> = ({ token, courseId }) => {
             <tr key={assignment.id}>
               <td>{assignment.title}</td>
               <td>{assignment.description}</td>
-              <td>{assignment.due_date}</td>
+              <td>{convertDate(assignment.due_date)}</td>
+              <td>
+                <Form.Group controlId="formFile" className="mb-3 input-group"> 
+                  <Form.Control type="file" name="files" onChange={(e) => onChange(e)} multiple/> 
+                  <Button variant='primary' value={assignment.id} onClick={(e) => uploadHandler(e)} disabled={loading}>Submit Testcase</Button>
+                </Form.Group>
+              </td> 
             </tr>
           ))}
         </tbody>

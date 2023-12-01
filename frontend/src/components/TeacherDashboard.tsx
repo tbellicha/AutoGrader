@@ -7,68 +7,27 @@ import { getTeacherCourses } from '../services/TeacherDashboardService';
 import { useAuth } from '../components/AuthContext';
 
 
-const TeacherDashboard: React.FC<any> = () => {
+const TeacherDashboard: React.FC<any> = () => {  
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [errorMessage, setErrorMessage] = useState<string>('');
+
+  //Authentication
   const auth = useAuth();
   const teacherId = auth.teacherId ?? "";
   const authToken = auth.token ?? ""; 
 
-  const [loading, setLoading] = useState<boolean>(true);
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [errorMessage, setErrorMessage] = useState<string>('');
-
-  useEffect(() => {
-    setLoading(true);
-
+  useEffect(() => { 
     getTeacherCourses(teacherId, authToken)
     .then(data => { 
       const courses: Course[] = data.teacher.Courses;
 
       // Update state
-      setCourses(courses);
-      setLoading(false);
+      setCourses(courses); 
     }) 
     .catch(error => {
       console.error('Error occurred:', error);
-      setErrorMessage('An error occurred while fetching data.');
-      setLoading(false);
-    })
-
-    /*
-    const fetchTeacherData = async () => {
-      try {
-        // Fetch courses information
-        //const coursesResponse = await getTeacherCourses(teacherId, authToken);
-        const courseResponse = await getTeacherCourses(teacherId, authToken);
-        const data = courseResponse.json();
-        console.log(courseResponse);
-        console.log(data);
-        console.log(data.data)
-        
-        getTeacherCourses(teacherId, authToken)
-        .then(response => {
-          console.log(response);
-          if(response.ok){
-            return response.json();
-          }
-        })
-        .then(data => {
-          console.log(data);
-        })
-        
-        //const courses: Course[] = coursesResponse.data.course;
-
-        // Update state
-        setCourses(courses);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error occurred:', error);
-        setErrorMessage('An error occurred while fetching data.');
-        setLoading(false);
-      }
-    };
-    */
-
-    //fetchTeacherData();
+      setErrorMessage('An error occurred while fetching data.'); 
+    }) 
   }, [teacherId, authToken]);
 
   return (
