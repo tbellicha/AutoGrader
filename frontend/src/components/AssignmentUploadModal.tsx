@@ -1,14 +1,10 @@
-import React, { useState } from 'react';
-
+import React, { useEffect, useState } from 'react';
 import { Modal, Button, Form } from 'react-bootstrap';
-
 import { Assignment } from '../types/Assignments';
 import { ServerResponse } from '../types/ServerResponse';
-
 import { useAuth } from '../components/AuthContext';
-
 import { uploadAssignment } from '../services/AssignmentSubmissionService';
-import { HomeworkData } from '../types/HomeworkData';
+import useLocalStorage from '../hooks/useLocalStorage';
 
 interface AssignmentModalProps {
     show: boolean;
@@ -21,6 +17,7 @@ const AssignmentUploadModal: React.FC<AssignmentModalProps> = (props) => {
     const authToken = auth.token ?? "";
 
     const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
+    const [serverResponseData, setServerResponseData] = useLocalStorage<ServerResponse | null>("serverResponseData", null);
 
     const dateOptions: Intl.DateTimeFormatOptions = {
         month: '2-digit',
@@ -47,10 +44,21 @@ const AssignmentUploadModal: React.FC<AssignmentModalProps> = (props) => {
 
         try {
             const response: ServerResponse = await uploadAssignment(props.assignment.id, authToken, files);
+            setServerResponseData(response);
         } catch (error) {
             console.error(`Oh no!: ${error}`);
         }
     };
+
+    useEffect(() => {
+        if (serverResponseData && serverResponseData.assignment.id !== "null") {
+            console.log(`The server has responded with: ${serverResponseData.assignment.id}'s score`);
+        }
+
+        return () => {
+            setSelectedFiles(null);
+        };
+    }, [serverResponseData]);
 
     return (
         <>

@@ -1,15 +1,16 @@
-import StudentEnrollment from './components/StudentEnrollment';
-import CourseCreation from './components/CourseCreation';
 import AssignmentCreation from './components/AssignmentCreation';
-import TeacherDashboard from './components/TeacherDashboard';
+import AssignmentResults from './views/AssignmentResults';
+import CourseCreation from './components/CourseCreation';
 import CourseDetails from './components/CourseDetails';
 import Login from './views/Login';
 import Signup from './views/Signup';
-import StudentDashboard from './views/StudentDashboard';
 import StudentAssignments from './views/StudentAssignments';
+import StudentDashboard from './views/StudentDashboard';
+import StudentEnrollment from './components/StudentEnrollment';
+import TeacherDashboard from './components/TeacherDashboard';
 
-const TEACHER = "TEACHER";
 const STUDENT = "STUDENT";
+const TEACHER = "TEACHER";
 
 const routes: Route[] = [
     {
@@ -60,6 +61,12 @@ const routes: Route[] = [
     {
         path: '/StudentAssignments',
         component: StudentAssignments,
+        protected: true,
+        role: STUDENT,
+    },
+    {
+        path: '/AssignmentResults',
+        component: AssignmentResults,
         protected: true,
         role: STUDENT,
     }
