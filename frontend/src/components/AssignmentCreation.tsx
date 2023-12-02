@@ -38,15 +38,38 @@ const AssignmentCreation: React.FC = () => {
     fetchCourses();   
   }, [authToken]);
 
-  const createAssignmentHandler = async () => { 
-    setLoading(true);
+  const createAssignmentHandler = async () => {  
+    if(!courseId){
+      console.log('Course id missing.');
+      setErrorMessage('Please select a course.');
+      return;
+    }
+    if(!assignmentTitle){
+      console.log('Assignment title missing.');
+      setErrorMessage('Assignment title is missing.');
+      return;
+    }
+    if(!assignmentDescription){
+      console.log('Assignment description is missing.');
+      setErrorMessage('Assignment description is missing');
+      return;
+    }
+    if(!assignmentDueDate){
+      console.log('Assignment due date is missing.');
+      setErrorMessage('Assignment due date is missing.')
+      return;
+    }
+    
     const data = {
       title: assignmentTitle,
       description: assignmentDescription,
       due_date: assignmentDueDate,
     }
+
     const validCourseId = courseId || "";
 
+    setErrorMessage('');
+    setLoading(true);
     
     try {
       const response = await createAssignment(validCourseId, data, authToken)

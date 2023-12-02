@@ -16,19 +16,35 @@ const CourseCreation: React.FC = () => {
   const authToken = auth.token ?? "";
 
   const createCourseHandler = async () => {
-    setLoading(true);  
+    if(!courseName){ 
+      console.log('Missing course name.');
+      setErrorMessage('Missing course name.');
+      return;
+    }
+    if(!courseCode){ 
+      console.log('Missing course code.')
+      setErrorMessage('Missing course code.');
+      return;
+    }
+    setErrorMessage('');
+    setLoading(true); 
+    
     try {
       const response = await createCourse(courseName, courseCode, teacherId, authToken);
       if(response.status === 200){
         setCourseName('');
         setCourseCode('');
         console.log('Course created successfully');
-        setLoading(false);
+        console.log(response); 
+      } else {
+        setCourseName('');
+        setCourseCode('');
+        console.log('Failed to create course.');
+        setErrorMessage('Failed to create course.');
       }
     } catch (error) {
       console.error('Error occurred:', error);
-      setErrorMessage('An error occurred.');
-      setLoading(false);
+      setErrorMessage('An error occurred.'); 
     } finally {
       setLoading(false);
     }  

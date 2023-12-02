@@ -3,17 +3,15 @@ import { Form, Button, Container } from 'react-bootstrap';
 import { Student, Course } from '../types/TeacherDashboard';
 import { useAuth } from '../components/AuthContext';
 import { enrollStudent, getAllStudents, getTeacherCourses } from '../services/TeacherDashboardService';
-import NavBar from './TeacherNavbar';
-
-interface StudentEnrollmentProps {
-  token: string | null;
-}
+import NavBar from './TeacherNavbar'; 
 
 const StudentEnrollment: React.FC= () => {
   const [courseId, setCourseId] = useState<string | null>('');
   const [studentId, setStudentId] = useState<string | null>('');
   const [courses, setCourses] = useState<Course[]>([]);
   const [students, setStudents] = useState([]);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const auth = useAuth();
   const teacherId = auth.teacherId ?? "";
@@ -51,7 +49,37 @@ const StudentEnrollment: React.FC= () => {
     fetchStudents();
   }, [authToken]);
 
-  const enrollStudentHandler = async () => { 
+  const enrollStudentHandler = async () => {   
+    if(!courseId){
+      console.log('Missing course id');
+      setErrorMessage('Please select a course.');
+      return;
+    }
+    if(!studentId){
+      console.log('Missing student id');
+      setErrorMessage('Please select a student to enroll.');
+      return;
+    }
+    setErrorMessage('');
+
+    const validCourseId = courseId || '';
+    const validStudentId = studentId || ''; 
+    setLoading(true);
+
+    try {
+      const response = await enrollStudent(validCourseId, validStudentId, authToken);
+      if(response.status === 200){
+        console.log(response);
+      } else {
+        console.log("Error enrolling student");
+        setErrorMessage(response.statusText);
+      } 
+    } catch (error) {
+      console.error("Error has occured", error);
+      setErrorMessage("Error has occured");
+    } finally {
+      setLoading(false);
+    }
     /*
     try {
       if (courseId !== null) {
@@ -123,9 +151,12 @@ const StudentEnrollment: React.FC= () => {
         </Form.Group>
 
         {/* Enroll Student Button */}
-        <Button variant="primary" onClick={enrollStudentHandler}>
+        <Button variant="primary" onClick={enrollStudentHandler} disabled={loading}>
           Enroll Student
         </Button>
+        {errorMessage && (
+          <div className="text-danger mt-2">{errorMessage}</div>
+        )}
       </Form>
     </Container>
     </div>

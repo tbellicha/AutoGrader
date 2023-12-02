@@ -76,6 +76,7 @@ const CourseDetails: React.FC = () => {
   const uploadHandler = async (e: any) => {  
     setLoading(true);
     console.log(e.target.value);
+    console.log(files.length);
     try { 
       const formData = new FormData();
       files.forEach(file => formData.append('file', file));  
