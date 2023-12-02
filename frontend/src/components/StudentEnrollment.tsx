@@ -1,69 +1,93 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Button, Container } from 'react-bootstrap';
 import { Student, Course } from '../types/TeacherDashboard';
-import NavBar from './TeacherNavbar';
+import { useAuth } from '../components/AuthContext';
+import { enrollStudent, getAllStudents, getTeacherCourses } from '../services/TeacherDashboardService';
+import NavBar from './TeacherNavbar'; 
 
-interface StudentEnrollmentProps {
-  token: string | null;
-}
-
-const StudentEnrollment: React.FC<StudentEnrollmentProps> = ({ token }) => {
-  const [courseId, setCourseId] = useState<number | null>(null);
-  const [studentId, setStudentId] = useState<number>(0);
+const StudentEnrollment: React.FC= () => {
+  const [courseId, setCourseId] = useState<string | null>('');
+  const [studentId, setStudentId] = useState<string | null>('');
   const [courses, setCourses] = useState<Course[]>([]);
   const [students, setStudents] = useState([]);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const auth = useAuth();
+  const teacherId = auth.teacherId ?? "";
+  const authToken = auth.token ?? ""; 
 
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const response = await fetch('/api/courses', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          setCourses(result.courses);
+        const response = await getTeacherCourses(teacherId, authToken);
+        console.log(response);
+        if(response != null){
+          setCourses(response.teacher.Courses);
         } else {
-          console.error('Failed to fetch courses:', response.statusText);
+          console.log('Error fetching courses');
         }
       } catch (error) {
-        console.error('Error occurred while fetching courses:', error);
+        console.error('Error occured while fetching courses', error);
       }
     };
 
     const fetchStudents = async () => {
       try {
-        const response = await fetch('/api/students', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          setStudents(result.students);
+        const response = await getAllStudents(authToken);
+        if(response.status === 200){ 
+          setStudents(response.data.students);
         } else {
-          console.error('Failed to fetch students:', response.statusText);
+          console.error('Failed to fetch students');
         }
       } catch (error) {
-        console.error('Error occurred while fetching students:', error);
+        console.error('Error occured while fetching students', error);
       }
     };
 
     fetchCourses();
     fetchStudents();
-  }, [token]);
+  }, [authToken]);
 
-  const enrollStudentHandler = async () => {
+  const enrollStudentHandler = async () => {   
+    if(!courseId){
+      console.log('Missing course id');
+      setErrorMessage('Please select a course.');
+      return;
+    }
+    if(!studentId){
+      console.log('Missing student id');
+      setErrorMessage('Please select a student to enroll.');
+      return;
+    }
+    setErrorMessage('');
+
+    const validCourseId = courseId || '';
+    const validStudentId = studentId || ''; 
+    setLoading(true);
+
+    try {
+      const response = await enrollStudent(validCourseId, validStudentId, authToken);
+      if(response.status === 200){
+        console.log(response);
+      } else {
+        console.log("Error enrolling student");
+        setErrorMessage(response.statusText);
+      } 
+    } catch (error) {
+      console.error("Error has occured", error);
+      setErrorMessage("Error has occured");
+    } finally {
+      setLoading(false);
+    }
+    /*
     try {
       if (courseId !== null) {
         const response = await fetch(`/api/course/${courseId}/enroll`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${authToken}`,
           },
           body: JSON.stringify({
             student_id: studentId,
@@ -83,6 +107,7 @@ const StudentEnrollment: React.FC<StudentEnrollmentProps> = ({ token }) => {
     } catch (error) {
       console.error('Error occurred:', error);
     }
+    */
   };
 
   return (
@@ -96,8 +121,8 @@ const StudentEnrollment: React.FC<StudentEnrollmentProps> = ({ token }) => {
           <Form.Label>Select Course</Form.Label>
           <Form.Control
             as="select"
-            value={courseId !== null ? courseId : ''}
-            onChange={(e) => setCourseId(parseInt(e.target.value, 10))}
+            value={courseId || ''}
+            onChange={(e) => setCourseId(e.target.value)}
           >
             <option value="" disabled>Select a course</option>
             {courses.map((course) => (
@@ -113,8 +138,8 @@ const StudentEnrollment: React.FC<StudentEnrollmentProps> = ({ token }) => {
           <Form.Label>Select Student</Form.Label>
           <Form.Control
             as="select"
-            value={studentId !== 0 ? studentId : ''}
-            onChange={(e) => setStudentId(parseInt(e.target.value, 10))}
+            value={studentId || ''}
+            onChange={(e) => setStudentId(e.target.value)}
           >
             <option value="" disabled>Select a student</option>
             {students.map((student: Student) => (
@@ -126,9 +151,12 @@ const StudentEnrollment: React.FC<StudentEnrollmentProps> = ({ token }) => {
         </Form.Group>
 
         {/* Enroll Student Button */}
-        <Button variant="primary" onClick={enrollStudentHandler}>
+        <Button variant="primary" onClick={enrollStudentHandler} disabled={loading}>
           Enroll Student
         </Button>
+        {errorMessage && (
+          <div className="text-danger mt-2">{errorMessage}</div>
+        )}
       </Form>
     </Container>
     </div>

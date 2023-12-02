@@ -2,47 +2,52 @@ import React, { useState, useEffect } from 'react';
 import { Form, Button, Container } from 'react-bootstrap';
 import NavBar from './TeacherNavbar';
 import { useAuth } from './AuthContext.tsx';
+import { createCourse } from '../services/TeacherDashboardService';
 
 const CourseCreation: React.FC = () => {
-  const { token, teacherId } = useAuth();
   const [courseName, setCourseName] = useState('');
-  const [courseCode, setCourseCode] = useState('');
-  //const [teacherId, setTeacherId] = useState('');
+  const [courseCode, setCourseCode] = useState(''); 
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
+  //Authentication
+  const auth = useAuth();
+  const teacherId = auth.teacherId ?? "";
+  const authToken = auth.token ?? "";
+
   const createCourseHandler = async () => {
+    if(!courseName){ 
+      console.log('Missing course name.');
+      setErrorMessage('Missing course name.');
+      return;
+    }
+    if(!courseCode){ 
+      console.log('Missing course code.')
+      setErrorMessage('Missing course code.');
+      return;
+    }
+    setErrorMessage('');
+    setLoading(true); 
+    
     try {
-      setLoading(true);
-
-      const response = await fetch('/api/course', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          course_name: courseName,
-          course_code: courseCode,
-          teacher_id: teacherId,
-        }),
-      });
-
-      if (response.ok) {
+      const response = await createCourse(courseName, courseCode, teacherId, authToken);
+      if(response.status === 200){
         setCourseName('');
         setCourseCode('');
-        //setTeacherId('');
         console.log('Course created successfully');
+        console.log(response); 
       } else {
-        const error = await response.text();
-        setErrorMessage(error);
+        setCourseName('');
+        setCourseCode('');
+        console.log('Failed to create course.');
+        setErrorMessage('Failed to create course.');
       }
     } catch (error) {
       console.error('Error occurred:', error);
-      setErrorMessage('An error occurred.');
+      setErrorMessage('An error occurred.'); 
     } finally {
       setLoading(false);
-    }
+    }  
   };
 
   return (
