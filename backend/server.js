@@ -44,13 +44,13 @@ app.use(passport.session())
 //Setting storage settings
 const storage = multer.memoryStorage()
 
-const upload = multer({ storage: storage }) 
+const upload = multer({ storage: storage })
 
 /**
  * @api {post} /api/upload/:assignment_id, Upload test case to s3 bucket specified by assignment_id
  */
 app.post(
-    "/api/upload/:assignment_id/testcase", 
+    "/api/upload/:assignment_id/testcase",
     passport.authenticate('jwt', {session: false}), upload.array('file'), async (req, res) => {
     try {
         if(!req.files){
@@ -66,16 +66,16 @@ app.post(
         console.log(uploadResult)
         res.status(200).send("Testcase upload successful")
     } catch (error) {
-        console.log("Error occured: ", error)
-        return res.status(500).send("An error has occured.")
+        console.log("Error occurred: ", error)
+        return res.status(500).send("An error has occurred.")
     }
-}) 
+})
 
 /**
  * @api {post} /api/upload/:assignment_id/assignment, Upload homework files to s3 bucket specified by assignment_id
  */
 app.post(
-    "/api/upload/:assignment_id/assignment", 
+    "/api/upload/:assignment_id/assignment",
     passport.authenticate('jwt', {session: false}), upload.array('file'), async (req, res) => {
     try {
         if(!req.files){
@@ -86,13 +86,13 @@ app.post(
         }
         if(req.user.role !== UserRole.STUDENT){
             return res.status(401).send("Not enough permissions")
-        } 
+        }
         const uploadResult = await s3UploadHW(req.files, req.params.assignment_id)
         console.log(uploadResult)
         res.status(200).send("Homework upload successful")
     } catch (error) {
-        console.log("Error occured: ", error)
-        return res.status(500).send("An error has occured.")
+        console.log("Error occurred: ", error)
+        return res.status(500).send("An error has occurred.")
     }
 })
 
@@ -451,7 +451,7 @@ app.post(
         if (!req.user) {
             return res.status(401).send('Invalid token');
         }
-        if (req.user.role !== UserRole.ADMIN && (req.user.role !== UserRole.TEACHER || req.user.teacher_id !== req.params.teacher_id)) {
+        if (req.user.role !== UserRole.ADMIN && req.user.role !== UserRole.TEACHER) {
             return res.status(401).send('Not enough permissions.');
         }
         const student_id = req.body.student_id;
@@ -465,6 +465,9 @@ app.post(
         })
         if (!course) {
             return res.status(400).send('Course does not exist.');
+        }
+        if (req.user.role == UserRole.TEACHER && req.user.teacher_id !== course.teacher_id) {
+            return res.status(401).send('Not enough permissions, teacher is not the owner of the course.');
         }
         const student = await database.prisma.student.findUnique({
             where: { id: student_id },
@@ -507,16 +510,18 @@ app.get('/api/course/:course_id/students',
         if (!req.user) {
             return res.status(401).send('Invalid token');
         }
-        /*
-        if (req.user.role !== UserRole.ADMIN && (req.user.role !== UserRole.TEACHER || req.user.teacher_id !== req.params.teacher_id)) {
+        if (req.user.role !== UserRole.ADMIN && req.user.role !== UserRole.TEACHER) {
             return res.status(401).send('Not enough permissions.');
         }
-        */
+        
         const course = await database.prisma.course.findUnique({
             where: { id: req.params.course_id },
         })
         if (!course) {
             return res.status(400).send('Course does not exist.');
+        }
+        if (req.user.role == UserRole.TEACHER && req.user.teacher_id !== course.teacher_id) {
+            return res.status(401).send('Not enough permissions, teacher is not the owner of the course.');
         }
         const students = await database.prisma.student.findMany({
             where: { Enrollments: { some: { course_id: course.id } } }
@@ -657,7 +662,7 @@ app.get(
             return res.status(401).send('Not enough permissions.');
         }
         const students = await database.prisma.student.findMany({
-            include: { Enrollments: true },
+            include: { Enrollments: true, Submissions: true },
         });
         return res.status(200).json({ students });
     } catch (error) {
