@@ -1,17 +1,25 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
-type StoredValue<T> = T | null;
+type SetValue<T> = (value: T | ((prevValue: T) => T)) => void;
 
-const useLocalStorage = <T>(key: string, initialValue: T): [StoredValue<T>, (newValue:T) => void] => {
-    const storedValue = JSON.parse(localStorage.getItem(key) ?? "null") || initialValue;
-    const [value, setValue] = useState<T>(storedValue);
+// useLocalStorage key value? -> [value, setValue]
+// if value is set, then write to localStorage the object with key and value
+const useLocalStorage = <T>(key: string): [T, SetValue<T>] => {
+    const [value, setValue] = useState<T>(() => {
+        let item = localStorage.getItem(key);
+        if (!item) {
+            return;
+        }
+        return JSON.parse(item);
+    });
 
-    const setLocalStorageValue = (newValue: T) => {
-        setValue(newValue);
-        localStorage.setItem(key, JSON.stringify(newValue));
-    };
+    useEffect(() => {
+        if(value !== null) {
+            localStorage.setItem(key, JSON.stringify(value));
+        }
+    }, [key, value]);
 
-    return [value, setLocalStorageValue];
+    return [value, setValue];
 };
 
 export default useLocalStorage;

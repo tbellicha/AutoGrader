@@ -17,7 +17,7 @@ const AssignmentUploadModal: React.FC<AssignmentModalProps> = (props) => {
     const authToken = auth.token ?? "";
 
     const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
-    const [serverResponseData, setServerResponseData] = useLocalStorage<ServerResponse | null>("serverResponseData", null);
+    const [serverResponseData, setServerResponseData] = useLocalStorage<ServerResponse>("serverResponseData");
 
     const dateOptions: Intl.DateTimeFormatOptions = {
         month: '2-digit',
@@ -52,7 +52,8 @@ const AssignmentUploadModal: React.FC<AssignmentModalProps> = (props) => {
 
     useEffect(() => {
         if (serverResponseData && serverResponseData.assignment.id !== "null") {
-            console.log(`The server has responded with: ${serverResponseData.assignment.id}'s score`);
+            console.log(`The server has responsed and the submission was recorded to local storage!`);
+            console.log(JSON.stringify(serverResponseData));
         }
 
         return () => {

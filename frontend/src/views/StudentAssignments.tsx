@@ -6,7 +6,7 @@ import AssignmentUploadModal from '../components/AssignmentUploadModal';
 import StudentNavbar from '../components/StudentNavbar';
 import { Assignment, Assignments } from '../types/Assignments';
 import useLocalStorage from '../hooks/useLocalStorage';
-import {ServerResponse} from '../types/ServerResponse';
+import { ServerResponse } from '../types/ServerResponse';
 
 const STUDENT_ASSIGNMENT_ROUTE = '/AssignmentResults';
 
@@ -16,7 +16,7 @@ const StudentAssignments: React.FC<any> = () => {
     const [showModal, setShowModal] = useState<boolean>(false);
     const [showResults, setShowResults] = useState<boolean>(false);
     const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
-    const [serverResponseData, setServerResponseData] = useLocalStorage<ServerResponse | null>("serverResponseData", null);
+    const [serverResponseData, _] = useLocalStorage<ServerResponse>("serverResponseData");
 
     const location = useLocation();
     const assignments: Assignments = location.state.assignments;
@@ -42,27 +42,35 @@ const StudentAssignments: React.FC<any> = () => {
         // forward assignmentId to AssignmentUploadModal component
         // open AssignmentUploadModal component
         setSelectedAssignment(assignment);
-
-        const msg = `Submission request for ${assignment.id} sent!`;
-        console.log(msg);
-
         setShowModal(true);
     };
 
     const handleViewResults = (assignment: Assignment) => {
         // forward assignmentId to AssignmentResults page
         // open AssignmentResults component
-        const msg = `View results request for ${assignment.id} sent!`;
-        console.log(msg);
+        // wait until the server response data is available in local storage,
+        // once it is available, navigate to AssignmentResults page
+        if(!serverResponseData) {
+            console.log("DEBUG TRACE: serverResponseData is null");
+            return;
+        }
 
-        console.log(serverResponseData)
-        //navigate(STUDENT_ASSIGNMENT_ROUTE, { state: { assignment_id: assignment.id }});
+        if(serverResponseData.assignment.id !== assignment.id) {
+            console.log("DEBUG TRACE: assignment id mismatch");
+            return;
+        }
+
+        const state = {
+            assignment_id: assignment.id
+        };
+
+        navigate(STUDENT_ASSIGNMENT_ROUTE, { state: state });
     };
 
-    // subscribe and observe serverResponseData every time it changes
     useEffect(() => {
-        if(serverResponseData && serverResponseData.assignment.id !== "null") {
-            console.log(`Found in local storage: ${serverResponseData.assignment.id}'s score`);
+        if (serverResponseData)
+        {
+            console.log("DEBUG TRACE: " + JSON.stringify(serverResponseData));
             setShowResults(true);
         }
     }, [serverResponseData]);
@@ -99,9 +107,9 @@ const StudentAssignments: React.FC<any> = () => {
                                 </td>
                                 <td>
                                     <Button
-                                    variant="secondary"
-                                    onClick={() => handleViewResults(assignment)}
-                                    //{...serverResponseData && { disabled: true }}
+                                        variant="secondary"
+                                        onClick={() => handleViewResults(assignment)}
+                                        {...(showResults ? {} : { disabled: true })}
                                     >
                                         View
                                     </Button>
