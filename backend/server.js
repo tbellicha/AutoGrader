@@ -62,7 +62,7 @@ app.post(
         if(req.user.role !== UserRole.TEACHER){
             return res.status(401).send("Not enough permissions")
         }
-        const uploadResult = await s3UploadTC(req.files, req.params.assignment_id)
+        const uploadResult = await s3Upl*oadTC(req.files, req.params.assignment_id)
         console.log(uploadResult)
         res.status(200).send("Testcase upload successful")
     } catch (error) {
@@ -474,6 +474,12 @@ app.post(
         })
         if (!student) {
             return res.status(400).send('Student does not exist.');
+        }
+        const checkStudentEnrollment = await database.prisma.enrollment.findFirst({
+            where: { course_id: course.id, student_id: student.id },
+        })
+        if (checkStudentEnrollment) {
+            return res.status(400).send('Student is already enrolled in the course.');
         }
         const enrollment = await database.prisma.enrollment.create({
             data: {
